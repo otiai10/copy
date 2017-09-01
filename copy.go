@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 )
 
-// Copy copies src to dest, doesn't matter if src is a directory of a file
+// Copy copies src to dest, doesn't matter if src is a directory or a file
 func Copy(src, dest string) error {
 	info, err := os.Stat(src)
 	if err != nil {
