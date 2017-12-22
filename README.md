@@ -1,5 +1,5 @@
 # copy
-[![Build Status](https://travis-ci.org/otiai10/copy.svg?branch=master)](https://travis-ci.org/otiai10/copy)
+[![Build Status](https://travis-ci.org/otiai10/copy.svg?branch=master)](https://travis-ci.org/otiai10/copy) [![GoDoc](https://godoc.org/github.com/otiai10/copy?status.svg)](https://godoc.org/github.com/otiai10/copy)
 
 `copy` copies directories recursively.
 
