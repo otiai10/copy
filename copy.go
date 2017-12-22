@@ -13,6 +13,11 @@ func Copy(src, dest string) error {
 	if err != nil {
 		return err
 	}
+	return copy(src, dest, info)
+}
+
+// "info" must be given here, NOT nil.
+func copy(src, dest string, info os.FileInfo) error {
 	if info.IsDir() {
 		return dcopy(src, dest, info)
 	}
@@ -20,14 +25,6 @@ func Copy(src, dest string) error {
 }
 
 func fcopy(src, dest string, info os.FileInfo) error {
-
-	if info == nil {
-		i, err := os.Stat(src)
-		if err != nil {
-			return err
-		}
-		info = i
-	}
 
 	f, err := os.Create(dest)
 	if err != nil {
@@ -45,41 +42,30 @@ func fcopy(src, dest string, info os.FileInfo) error {
 	}
 	defer s.Close()
 
-	if _, err = io.Copy(f, s); err != nil {
-		return err
-	}
-	return nil
+	_, err = io.Copy(f, s)
+	return err
 }
 
 func dcopy(src, dest string, info os.FileInfo) error {
-	if info == nil {
-		i, err := os.Stat(src)
-		if err != nil {
-			return err
-		}
-		info = i
-	}
+
 	if err := os.MkdirAll(dest, info.Mode()); err != nil {
 		return err
 	}
+
 	infos, err := ioutil.ReadDir(src)
 	if err != nil {
 		return err
 	}
+
 	for _, info := range infos {
-		if info.IsDir() {
-			dcopy(
-				filepath.Join(src, info.Name()),
-				filepath.Join(dest, info.Name()),
-				info,
-			)
-		} else {
-			fcopy(
-				filepath.Join(src, info.Name()),
-				filepath.Join(dest, info.Name()),
-				info,
-			)
+		if err := copy(
+			filepath.Join(src, info.Name()),
+			filepath.Join(dest, info.Name()),
+			info,
+		); err != nil {
+			return err
 		}
 	}
+
 	return nil
 }
