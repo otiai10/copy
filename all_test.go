@@ -2,6 +2,7 @@ package copy
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	. "github.com/otiai10/mint"
@@ -32,5 +33,37 @@ func TestCopy(t *testing.T) {
 		os.Create("testdata/case01.1/001.txt")
 		err := Copy("testdata/case01.1/001.txt", "testdata/case01.1/002.txt")
 		Expect(t, err).ToBe(nil)
+	})
+
+	When(t, "too long name is given", func(t *testing.T) {
+		dest := "foobar"
+		for i := 0; i < 8; i++ {
+			dest = dest + dest
+		}
+		defer os.RemoveAll("testdata/case02")
+		os.MkdirAll("testdata/case02", os.ModePerm)
+		os.Create("testdata/case02/001.txt")
+		err := Copy("testdata/case02/001.txt", filepath.Join("testdata/case02", dest))
+		Expect(t, err).Not().ToBe(nil)
+	})
+
+	When(t, "try to create not permitted location", func(t *testing.T) {
+		dest := "/001.txt"
+		defer os.RemoveAll("testdata/case03")
+		os.MkdirAll("testdata/case03", os.ModePerm)
+		os.Create("testdata/case03/001.txt")
+		err := Copy("testdata/case03/001.txt", dest)
+		Expect(t, err).Not().ToBe(nil)
+	})
+
+	When(t, "try to create a directory on existing file name", func(t *testing.T) {
+		defer os.RemoveAll("testdata/case04")
+		os.MkdirAll("testdata/case04", os.ModePerm)
+		os.Create("testdata/case04/001.txt")
+
+		os.Create("testdata/case04.copy")
+
+		err := Copy("testdata/case04", "testdata/case04.copy")
+		Expect(t, err).Not().ToBe(nil)
 	})
 }
