@@ -15,9 +15,9 @@ func TestCopy(t *testing.T) {
 	Expect(t, err).ToBe(nil)
 	_, err = os.Create("testdata/case01/bar/002.txt")
 	Expect(t, err).ToBe(nil)
-	err = Copy("testdata/case01", "testdata/case01/copy")
+	err = Copy("testdata/case01", "testdata/case01.copy")
 	Expect(t, err).ToBe(nil)
-	info, err := os.Stat("testdata/case01/copy/bar/002.txt")
+	info, err := os.Stat("testdata/case01.copy/bar/002.txt")
 	Expect(t, err).ToBe(nil)
 	Expect(t, info.IsDir()).ToBe(false)
 
