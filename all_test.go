@@ -73,4 +73,14 @@ func TestCopy(t *testing.T) {
 		err := Copy("testdata/case04", "testdata/case04.copy")
 		Expect(t, err).Not().ToBe(nil)
 	})
+
+	When(t, "try to create a symlink when it already exists", func(t *testing.T) {
+		defer os.RemoveAll("testdata/case05")
+		os.MkdirAll("testdata/case05", os.ModePerm)
+		os.Symlink("testdata/case05/bar", "testdata/case05/foo")
+		os.Symlink("testdata/case05/bar", "testdata/case05/foo.copy")
+
+		err := Copy("testdata/case05/foo", "testdata/case05/foo.copy")
+		Expect(t, err).Not().ToBe(nil)
+	})
 }
