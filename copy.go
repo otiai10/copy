@@ -9,7 +9,7 @@ import (
 
 // Copy copies src to dest, doesn't matter if src is a directory or a file
 func Copy(src, dest string) error {
-	info, err := os.Stat(src)
+	info, err := os.Lstat(src)
 	if err != nil {
 		return err
 	}
@@ -20,6 +20,8 @@ func Copy(src, dest string) error {
 func copy(src, dest string, info os.FileInfo) error {
 	if info.IsDir() {
 		return dcopy(src, dest, info)
+	} else if info.Mode() & os.ModeSymlink != 0 {
+		return lcopy(src, dest)
 	}
 	return fcopy(src, dest, info)
 }
@@ -44,6 +46,20 @@ func fcopy(src, dest string, info os.FileInfo) error {
 
 	_, err = io.Copy(f, s)
 	return err
+}
+
+func lcopy(src, dest string) error {
+
+	symlinkTarget, err := os.Readlink(src)
+	if err != nil {
+		return err
+	}
+
+	if err := os.Symlink(symlinkTarget, dest); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func dcopy(src, dest string, info os.FileInfo) error {

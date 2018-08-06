@@ -10,17 +10,24 @@ import (
 
 func TestCopy(t *testing.T) {
 	defer os.RemoveAll("testdata/case01")
+	defer os.RemoveAll("testdata/case01.copy")
 	err := os.MkdirAll("testdata/case01/bar", os.ModePerm)
 	Expect(t, err).ToBe(nil)
 	_, err = os.Create("testdata/case01/001.txt")
 	Expect(t, err).ToBe(nil)
 	_, err = os.Create("testdata/case01/bar/002.txt")
 	Expect(t, err).ToBe(nil)
+	err = os.Symlink("testdata/case01/bar", "testdata/case01/foo")
+	Expect(t, err).ToBe(nil)
 	err = Copy("testdata/case01", "testdata/case01.copy")
 	Expect(t, err).ToBe(nil)
 	info, err := os.Stat("testdata/case01.copy/bar/002.txt")
 	Expect(t, err).ToBe(nil)
 	Expect(t, info.IsDir()).ToBe(false)
+	info, err = os.Lstat("testdata/case01.copy/foo")
+	Expect(t, err).ToBe(nil)
+	Expect(t, info.IsDir()).ToBe(false)
+	Expect(t, info.Mode() & os.ModeSymlink).Not().ToBe(0)
 
 	When(t, "specified src doesn't exist", func(t *testing.T) {
 		err := Copy("not/existing/path", "anywhere")
@@ -64,6 +71,16 @@ func TestCopy(t *testing.T) {
 		os.Create("testdata/case04.copy")
 
 		err := Copy("testdata/case04", "testdata/case04.copy")
+		Expect(t, err).Not().ToBe(nil)
+	})
+
+	When(t, "try to create a symlink when it already exists", func(t *testing.T) {
+		defer os.RemoveAll("testdata/case05")
+		os.MkdirAll("testdata/case05", os.ModePerm)
+		os.Symlink("testdata/case05/bar", "testdata/case05/foo")
+		os.Symlink("testdata/case05/bar", "testdata/case05/foo.copy")
+
+		err := Copy("testdata/case05/foo", "testdata/case05/foo.copy")
 		Expect(t, err).Not().ToBe(nil)
 	})
 }
