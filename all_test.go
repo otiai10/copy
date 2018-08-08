@@ -54,4 +54,12 @@ func TestCopy(t *testing.T) {
 		Expect(t, err).Not().ToBe(nil)
 		Expect(t, err).TypeOf("*os.PathError")
 	})
+
+	When(t, "source directory includes symbolic link", func(t *testing.T) {
+		err := Copy("testdata/case03", "testdata.copy/case03")
+		Expect(t, err).ToBe(nil)
+		info, err := os.Lstat("testdata.copy/case03/case01")
+		Expect(t, err).ToBe(nil)
+		Expect(t, info.Mode()&os.ModeSymlink).Not().ToBe(0)
+	})
 }
