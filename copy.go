@@ -26,6 +26,10 @@ func copy(src, dest string, info os.FileInfo) error {
 
 func fcopy(src, dest string, info os.FileInfo) error {
 
+	if err := os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
+		return err
+	}
+
 	f, err := os.Create(dest)
 	if err != nil {
 		return err

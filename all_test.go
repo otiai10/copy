@@ -8,30 +8,28 @@ import (
 	. "github.com/otiai10/mint"
 )
 
+func TestMain(m *testing.M) {
+	os.MkdirAll("testdata.copy", os.ModePerm)
+	code := m.Run()
+	os.RemoveAll("testdata.copy")
+	os.Exit(code)
+}
+
 func TestCopy(t *testing.T) {
-	defer os.RemoveAll("testdata/case01")
-	err := os.MkdirAll("testdata/case01/bar", os.ModePerm)
+
+	err := Copy("./testdata/case00", "./testdata.copy/case00")
 	Expect(t, err).ToBe(nil)
-	_, err = os.Create("testdata/case01/001.txt")
-	Expect(t, err).ToBe(nil)
-	_, err = os.Create("testdata/case01/bar/002.txt")
-	Expect(t, err).ToBe(nil)
-	err = Copy("testdata/case01", "testdata/case01.copy")
-	Expect(t, err).ToBe(nil)
-	info, err := os.Stat("testdata/case01.copy/bar/002.txt")
+	info, err := os.Stat("./testdata.copy/case00/README.md")
 	Expect(t, err).ToBe(nil)
 	Expect(t, info.IsDir()).ToBe(false)
 
 	When(t, "specified src doesn't exist", func(t *testing.T) {
-		err := Copy("not/existing/path", "anywhere")
+		err := Copy("NOT/EXISTING/SOURCE/PATH", "anywhere")
 		Expect(t, err).Not().ToBe(nil)
 	})
 
 	When(t, "specified src is just a file", func(t *testing.T) {
-		defer os.RemoveAll("testdata/case01.1")
-		os.MkdirAll("testdata/case01.1", os.ModePerm)
-		os.Create("testdata/case01.1/001.txt")
-		err := Copy("testdata/case01.1/001.txt", "testdata/case01.1/002.txt")
+		err := Copy("testdata/case01/README.md", "testdata.copy/case01/README.md")
 		Expect(t, err).ToBe(nil)
 	})
 
@@ -40,30 +38,20 @@ func TestCopy(t *testing.T) {
 		for i := 0; i < 8; i++ {
 			dest = dest + dest
 		}
-		defer os.RemoveAll("testdata/case02")
-		os.MkdirAll("testdata/case02", os.ModePerm)
-		os.Create("testdata/case02/001.txt")
-		err := Copy("testdata/case02/001.txt", filepath.Join("testdata/case02", dest))
+		err := Copy("testdata/case00", filepath.Join("testdata/case00", dest))
 		Expect(t, err).Not().ToBe(nil)
+		Expect(t, err).TypeOf("*os.PathError")
 	})
 
 	When(t, "try to create not permitted location", func(t *testing.T) {
-		dest := "/001.txt"
-		defer os.RemoveAll("testdata/case03")
-		os.MkdirAll("testdata/case03", os.ModePerm)
-		os.Create("testdata/case03/001.txt")
-		err := Copy("testdata/case03/001.txt", dest)
+		err := Copy("testdata/case00", "/case00")
 		Expect(t, err).Not().ToBe(nil)
+		Expect(t, err).TypeOf("*os.PathError")
 	})
 
 	When(t, "try to create a directory on existing file name", func(t *testing.T) {
-		defer os.RemoveAll("testdata/case04")
-		os.MkdirAll("testdata/case04", os.ModePerm)
-		os.Create("testdata/case04/001.txt")
-
-		os.Create("testdata/case04.copy")
-
-		err := Copy("testdata/case04", "testdata/case04.copy")
+		err := Copy("testdata/case02", "testdata.copy/case00/README.md")
 		Expect(t, err).Not().ToBe(nil)
+		Expect(t, err).TypeOf("*os.PathError")
 	})
 }

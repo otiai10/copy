@@ -7,12 +7,9 @@ import (
 
 func ExampleCopy() {
 
-	os.MkdirAll("testdata/example/foo/bar", os.ModePerm)
-	defer os.RemoveAll("testdata")
-
-	err := Copy("testdata/example", "testdata/example.copy")
+	err := Copy("testdata/example", "testdata.copy/example")
 	fmt.Println("Error:", err)
-	info, _ := os.Stat("testdata/example.copy/foo/bar")
+	info, _ := os.Stat("testdata.copy/example")
 	fmt.Println("IsDir:", info.IsDir())
 
 	// Output:
