@@ -1,6 +1,6 @@
 language: go
 go:
-    - 1.8
+    - 1.9
     - tip
 before_script:
     - go get -t ./...
