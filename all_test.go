@@ -62,4 +62,11 @@ func TestCopy(t *testing.T) {
 		Expect(t, err).ToBe(nil)
 		Expect(t, info.Mode()&os.ModeSymlink).Not().ToBe(0)
 	})
+
+	When(t, "try to copy a file to existing path", func(t *testing.T) {
+		err := Copy("testdata/case04/README.md", "testdata/case04")
+		Expect(t, err).Not().ToBe(nil)
+		err = Copy("testdata/case04/README.md", "testdata/case04/README.md/foobar")
+		Expect(t, err).Not().ToBe(nil)
+	})
 }
