@@ -70,3 +70,69 @@ func TestCopy(t *testing.T) {
 		Expect(t, err).Not().ToBe(nil)
 	})
 }
+
+func TestPerm(t *testing.T) {
+
+	//Remove from dirs from previous tests
+	os.RemoveAll("./testdata.copy/")
+
+	err := Perm("./testdata/case00", "./testdata.copy/case00", 0777, 0644)
+	Expect(t, err).ToBe(nil)
+	info, err := os.Stat("./testdata.copy/case00/README.md")
+	Expect(t, err).ToBe(nil)
+	Expect(t, info.IsDir()).ToBe(false)
+
+	When(t, "specified src doesn't exist", func(t *testing.T) {
+		err := Perm("NOT/EXISTING/SOURCE/PATH", "anywhere", 0777, 0444)
+		Expect(t, err).Not().ToBe(nil)
+	})
+
+	When(t, "specified src is just a file", func(t *testing.T) {
+		err := Perm("testdata/case01/README.md", "testdata.copy/case01/README.md", 0777, 0444)
+		Expect(t, err).ToBe(nil)
+	})
+
+	When(t, "too long name is given", func(t *testing.T) {
+		dest := "foobar"
+		for i := 0; i < 8; i++ {
+			dest = dest + dest
+		}
+		err := Perm("testdata/case00", filepath.Join("testdata/case00", dest), 0777, 0644)
+		Expect(t, err).Not().ToBe(nil)
+		Expect(t, err).TypeOf("*os.PathError")
+	})
+
+	When(t, "try to create not permitted location", func(t *testing.T) {
+		err := Perm("testdata/case00", "/case00", 0777, 0644)
+		Expect(t, err).Not().ToBe(nil)
+		Expect(t, err).TypeOf("*os.PathError")
+	})
+
+	When(t, "try to create a directory on existing file name", func(t *testing.T) {
+		err := Perm("testdata/case02", "testdata.copy/case00/README.md", 0777, 0644)
+		Expect(t, err).Not().ToBe(nil)
+		Expect(t, err).TypeOf("*os.PathError")
+	})
+
+	When(t, "source directory includes symbolic link", func(t *testing.T) {
+		err := Perm("testdata/case03", "testdata.copy/case03", 0777, 0644)
+		Expect(t, err).ToBe(nil)
+		info, err := os.Lstat("testdata.copy/case03/case01")
+		Expect(t, err).ToBe(nil)
+		Expect(t, info.Mode()&os.ModeSymlink).Not().ToBe(0)
+	})
+
+	When(t, "try to copy a file to existing path", func(t *testing.T) {
+		err := Perm("testdata/case04/README.md", "testdata/case04", 0777, 0644)
+		Expect(t, err).Not().ToBe(nil)
+		err = Perm("testdata/case04/README.md", "testdata/case04/README.md/foobar", 0777, 0644)
+		Expect(t, err).Not().ToBe(nil)
+	})
+
+	When(t, "try to copy into a directory with only read perm", func(t *testing.T) {
+		err := Perm("testdata/case05", "testdata.copy/case05/README.md", 0555, 0644)
+		Expect(t, err).Not().ToBe(nil)
+		Expect(t, err).TypeOf("*os.PathError")
+	})
+
+}
