@@ -7,27 +7,8 @@ import (
 	"path/filepath"
 )
 
-var dPerm os.FileMode
-var fPerm os.FileMode
-var chmod bool
-
 // Copy copies src to dest, doesn't matter if src is a directory or a file
 func Copy(src, dest string) error {
-	chmod = false
-	info, err := os.Lstat(src)
-	if err != nil {
-		return err
-	}
-	return copy(src, dest, info)
-}
-
-// Perm copies src to dest, doesn't matter if src is a directory of a file.
-// All directories permissions will be set to destPerm.
-// All file permissions will be set to filePerm.
-func Perm(src, dest string, dirPerm, filePerm os.FileMode) error {
-	chmod = true
-	dPerm = dirPerm
-	fPerm = filePerm
 	info, err := os.Lstat(src)
 	if err != nil {
 		return err
@@ -63,13 +44,7 @@ func fcopy(src, dest string, info os.FileInfo) error {
 	}
 	defer f.Close()
 
-	mode := info.Mode()
-	// If using fPerm
-	if chmod {
-		mode = fPerm
-	}
-
-	if err = os.Chmod(f.Name(), mode); err != nil {
+	if err = os.Chmod(f.Name(), info.Mode()); err != nil {
 		return err
 	}
 
@@ -89,10 +64,6 @@ func fcopy(src, dest string, info os.FileInfo) error {
 func dcopy(srcdir, destdir string, info os.FileInfo) error {
 
 	mode := info.Mode()
-	// if using dPerm
-	if chmod {
-		mode = dPerm
-	}
 
 	if err := os.MkdirAll(destdir, mode); err != nil {
 		return err
@@ -103,6 +74,11 @@ func dcopy(srcdir, destdir string, info os.FileInfo) error {
 		return err
 	}
 
+	// Change dest dir filemode while copying into it
+	if err = os.Chmod(destdir, 0755); err != nil {
+		return err
+	}
+
 	for _, content := range contents {
 		cs, cd := filepath.Join(srcdir, content.Name()), filepath.Join(destdir, content.Name())
 		if err := copy(cs, cd, content); err != nil {
@@ -110,6 +86,12 @@ func dcopy(srcdir, destdir string, info os.FileInfo) error {
 			return err
 		}
 	}
+
+	// Change dest dir filemode to required mode
+	if err = os.Chmod(destdir, mode); err != nil {
+		return err
+	}
+
 	return nil
 }
 
