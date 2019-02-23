@@ -71,12 +71,16 @@ func TestCopy(t *testing.T) {
 	})
 
 	When(t, "try to copy a directory that has no write permission and copy file inside along with it", func(t *testing.T) {
-		err := Copy("testdata/case05", "testdata.copy/case05")
+		src := "testdata/case05"
+		dest := "testdata.copy/case05"
+		err := os.Chmod(src, os.FileMode(0555))
 		Expect(t, err).ToBe(nil)
-		info, err := os.Lstat("testdata.copy/case05")
+		err = Copy(src, dest)
+		Expect(t, err).ToBe(nil)
+		info, err := os.Lstat(dest)
 		Expect(t, err).ToBe(nil)
 		Expect(t, info.Mode().Perm()).ToBe(os.FileMode(0555))
-		err = os.Chmod("testdata.copy/case05", 0755)
+		err = os.Chmod(dest, 0755)
 		Expect(t, err).ToBe(nil)
 	})
 }

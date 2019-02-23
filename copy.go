@@ -75,7 +75,7 @@ func dcopy(srcdir, destdir string, info os.FileInfo) error {
 	}
 
 	// Change dest dir filemode while copying into it
-	if err = os.Chmod(destdir, 0755); err != nil {
+	if err = os.Chmod(destdir, os.FileMode(0755)); err != nil {
 		return err
 	}
 
