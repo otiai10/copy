@@ -78,6 +78,7 @@ func dcopy(srcdir, destdir string, info os.FileInfo) error {
 	if err = os.Chmod(destdir, os.FileMode(0755)); err != nil {
 		return err
 	}
+	defer os.Chmod(destdir, mode)
 
 	for _, content := range contents {
 		cs, cd := filepath.Join(srcdir, content.Name()), filepath.Join(destdir, content.Name())
@@ -85,11 +86,6 @@ func dcopy(srcdir, destdir string, info os.FileInfo) error {
 			// If any error, exit immediately
 			return err
 		}
-	}
-
-	// Change dest dir filemode to required mode
-	if err = os.Chmod(destdir, mode); err != nil {
-		return err
 	}
 
 	return nil
