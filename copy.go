@@ -70,22 +70,19 @@ func fcopy(src, dest string, info os.FileInfo) error {
 // and pass everything to "copy" recursively.
 func dcopy(srcdir, destdir string, info os.FileInfo) error {
 
-	mode := info.Mode()
+	originalMode := info.Mode()
 
-	if err := os.MkdirAll(destdir, mode); err != nil {
+	// Make dest dir with 0755 so that everything writable.
+	if err := os.MkdirAll(destdir, tmpPermissionForDirectory); err != nil {
 		return err
 	}
+	// Recover dir mode with original one.
+	defer os.Chmod(destdir, originalMode)
 
 	contents, err := ioutil.ReadDir(srcdir)
 	if err != nil {
 		return err
 	}
-
-	// Change dest dir filemode while copying into it
-	if err = os.Chmod(destdir, tmpPermissionForDirectory); err != nil {
-		return err
-	}
-	defer os.Chmod(destdir, mode)
 
 	for _, content := range contents {
 		cs, cd := filepath.Join(srcdir, content.Name()), filepath.Join(destdir, content.Name())
