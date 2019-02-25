@@ -7,6 +7,13 @@ import (
 	"path/filepath"
 )
 
+const (
+	// tmpPermissionForDirectory makes the destination directory writable,
+	// so that stuff can be copied recursively even if any original directory is NOT writable.
+	// See https://github.com/otiai10/copy/pull/9 for more information.
+	tmpPermissionForDirectory = os.FileMode(0755)
+)
+
 // Copy copies src to dest, doesn't matter if src is a directory or a file
 func Copy(src, dest string) error {
 	info, err := os.Lstat(src)
@@ -75,7 +82,7 @@ func dcopy(srcdir, destdir string, info os.FileInfo) error {
 	}
 
 	// Change dest dir filemode while copying into it
-	if err = os.Chmod(destdir, os.FileMode(0755)); err != nil {
+	if err = os.Chmod(destdir, tmpPermissionForDirectory); err != nil {
 		return err
 	}
 	defer os.Chmod(destdir, mode)
