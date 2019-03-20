@@ -9,10 +9,20 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	os.MkdirAll("testdata.copy", os.ModePerm)
+	setup(m)
 	code := m.Run()
-	os.RemoveAll("testdata.copy")
+	teardown(m)
 	os.Exit(code)
+}
+
+func setup(m *testing.M) {
+	os.MkdirAll("testdata.copy", os.ModePerm)
+	os.Symlink("testdata/case01", "testdata/case03/case01")
+}
+
+func teardown(m *testing.M) {
+	os.RemoveAll("testdata/case03/case01")
+	os.RemoveAll("testdata.copy")
 }
 
 func TestCopy(t *testing.T) {
