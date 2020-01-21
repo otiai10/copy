@@ -73,6 +73,16 @@ func TestCopy(t *testing.T) {
 		Expect(t, info.Mode()&os.ModeSymlink).Not().ToBe(0)
 	})
 
+	When(t, "try to copy to an existing path", func(t *testing.T) {
+		err := Copy("testdata/case03", "testdata.copy/case03")
+		Expect(t, err).Not().ToBe(nil)
+	})
+
+	When(t, "try to copy READ-not-allowed source", func(t *testing.T) {
+		err := Copy("testdata/case06", "testdata.copy/case06")
+		Expect(t, err).Not().ToBe(nil)
+	})
+
 	When(t, "try to copy a file to existing path", func(t *testing.T) {
 		err := Copy("testdata/case04/README.md", "testdata/case04")
 		Expect(t, err).Not().ToBe(nil)
