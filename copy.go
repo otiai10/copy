@@ -40,12 +40,8 @@ func copy(src, dest string, info os.FileInfo) error {
 // with considering existence of parent directory
 // and file permission.
 func fcopy(src, dest string, info os.FileInfo) (err error) {
-	close := func(f *os.File) {
-		if e := f.Close(); e != nil && err == nil {
-			err = e
-		}
-	}
-	if err = os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
+
+	if err := os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
 		return err
 	}
 
@@ -53,7 +49,7 @@ func fcopy(src, dest string, info os.FileInfo) (err error) {
 	if err != nil {
 		return err
 	}
-	defer close(f)
+	defer fclose(f, &err)
 
 	if err = os.Chmod(f.Name(), info.Mode()); err != nil {
 		return err
@@ -63,7 +59,7 @@ func fcopy(src, dest string, info os.FileInfo) (err error) {
 	if err != nil {
 		return err
 	}
-	defer close(s)
+	defer fclose(s, &err)
 
 	_, err = io.Copy(f, s)
 	return err
@@ -77,15 +73,11 @@ func dcopy(srcdir, destdir string, info os.FileInfo) (err error) {
 	originalMode := info.Mode()
 
 	// Make dest dir with 0755 so that everything writable.
-	if err = os.MkdirAll(destdir, tmpPermissionForDirectory); err != nil {
+	if err := os.MkdirAll(destdir, tmpPermissionForDirectory); err != nil {
 		return err
 	}
 	// Recover dir mode with original one.
-	defer func() {
-		if e := os.Chmod(destdir, originalMode); e != nil && err == nil {
-			err = e
-		}
-	}()
+	defer chmod(destdir, originalMode, &err)
 
 	contents, err := ioutil.ReadDir(srcdir)
 	if err != nil {
@@ -94,7 +86,7 @@ func dcopy(srcdir, destdir string, info os.FileInfo) (err error) {
 
 	for _, content := range contents {
 		cs, cd := filepath.Join(srcdir, content.Name()), filepath.Join(destdir, content.Name())
-		if err = copy(cs, cd, content); err != nil {
+		if err := copy(cs, cd, content); err != nil {
 			// If any error, exit immediately
 			return err
 		}
@@ -111,4 +103,20 @@ func lcopy(src, dest string, info os.FileInfo) error {
 		return err
 	}
 	return os.Symlink(src, dest)
+}
+
+// fclose ANYHOW closes file,
+// with asiging error occured BUT respecting the error already reported.
+func fclose(f *os.File, reported *error) {
+	if err := f.Close(); *reported == nil {
+		*reported = err
+	}
+}
+
+// chmod ANYHOW changes file mode,
+// with asiging error occured BUT respecting the error already reported.
+func chmod(dir string, mode os.FileMode, reported *error) {
+	if err := os.Chmod(dir, mode); *reported == nil {
+		*reported = err
+	}
 }
