@@ -39,7 +39,7 @@ func copy(src, dest string, info os.FileInfo) error {
 // fcopy is for just a file,
 // with considering existence of parent directory
 // and file permission.
-func fcopy(src, dest string, info os.FileInfo) error {
+func fcopy(src, dest string, info os.FileInfo) (err error) {
 
 	if err := os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
 		return err
@@ -49,7 +49,7 @@ func fcopy(src, dest string, info os.FileInfo) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer fclose(f, &err)
 
 	if err = os.Chmod(f.Name(), info.Mode()); err != nil {
 		return err
@@ -59,7 +59,7 @@ func fcopy(src, dest string, info os.FileInfo) error {
 	if err != nil {
 		return err
 	}
-	defer s.Close()
+	defer fclose(s, &err)
 
 	_, err = io.Copy(f, s)
 	return err
@@ -68,7 +68,7 @@ func fcopy(src, dest string, info os.FileInfo) error {
 // dcopy is for a directory,
 // with scanning contents inside the directory
 // and pass everything to "copy" recursively.
-func dcopy(srcdir, destdir string, info os.FileInfo) error {
+func dcopy(srcdir, destdir string, info os.FileInfo) (err error) {
 
 	originalMode := info.Mode()
 
@@ -77,7 +77,7 @@ func dcopy(srcdir, destdir string, info os.FileInfo) error {
 		return err
 	}
 	// Recover dir mode with original one.
-	defer os.Chmod(destdir, originalMode)
+	defer chmod(destdir, originalMode, &err)
 
 	contents, err := ioutil.ReadDir(srcdir)
 	if err != nil {
@@ -103,4 +103,20 @@ func lcopy(src, dest string, info os.FileInfo) error {
 		return err
 	}
 	return os.Symlink(src, dest)
+}
+
+// fclose ANYHOW closes file,
+// with asiging error occured BUT respecting the error already reported.
+func fclose(f *os.File, reported *error) {
+	if err := f.Close(); *reported == nil {
+		*reported = err
+	}
+}
+
+// chmod ANYHOW changes file mode,
+// with asiging error occured BUT respecting the error already reported.
+func chmod(dir string, mode os.FileMode, reported *error) {
+	if err := os.Chmod(dir, mode); *reported == nil {
+		*reported = err
+	}
 }
