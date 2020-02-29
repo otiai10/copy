@@ -1,6 +1,7 @@
 package copy
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -16,22 +17,43 @@ const (
 
 // Copy copies src to dest, doesn't matter if src is a directory or a file
 func Copy(src, dest string) error {
+	return CopyButSkipSome(src, dest, nil)
+}
+
+// CopyButSkipSome copies src to dest and skipping toSkip, doesn't matter if src is a directory or a file
+func CopyButSkipSome(src, dest string, toSkip []string) error {
+	toSkipMap := make(map[string]struct{})
+	for i := 0; i < len(toSkip); i++ {
+		toSkipMap[toSkip[i]] = struct{}{}
+	}
+
+	fmt.Println(toSkipMap)
+
 	info, err := os.Lstat(src)
 	if err != nil {
 		return err
 	}
-	return copy(src, dest, info)
+	return copy(src, dest, toSkipMap, info)
 }
 
 // copy dispatches copy-funcs according to the mode.
 // Because this "copy" could be called recursively,
 // "info" MUST be given here, NOT nil.
-func copy(src, dest string, info os.FileInfo) error {
+func copy(src, dest string, toSkip map[string]struct{}, info os.FileInfo) error {
+	_, ock := toSkip[src]
+	fmt.Println(src)
+	fmt.Println(ock)
+
+	if _, isToSkip := toSkip[src]; isToSkip {
+		return nil
+	}
+
 	if info.Mode()&os.ModeSymlink != 0 {
 		return lcopy(src, dest, info)
 	}
+
 	if info.IsDir() {
-		return dcopy(src, dest, info)
+		return dcopy(src, dest, toSkip, info)
 	}
 	return fcopy(src, dest, info)
 }
@@ -68,7 +90,7 @@ func fcopy(src, dest string, info os.FileInfo) (err error) {
 // dcopy is for a directory,
 // with scanning contents inside the directory
 // and pass everything to "copy" recursively.
-func dcopy(srcdir, destdir string, info os.FileInfo) (err error) {
+func dcopy(srcdir, destdir string, toSkip map[string]struct{}, info os.FileInfo) (err error) {
 
 	originalMode := info.Mode()
 
@@ -86,7 +108,7 @@ func dcopy(srcdir, destdir string, info os.FileInfo) (err error) {
 
 	for _, content := range contents {
 		cs, cd := filepath.Join(srcdir, content.Name()), filepath.Join(destdir, content.Name())
-		if err := copy(cs, cd, content); err != nil {
+		if err := copy(cs, cd, toSkip, content); err != nil {
 			// If any error, exit immediately
 			return err
 		}
