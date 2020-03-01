@@ -79,7 +79,7 @@ func TestCopy(t *testing.T) {
 	})
 
 	When(t, "try to copy READ-not-allowed source", func(t *testing.T) {
-		err := Copy("testdata/case06", "testdata.copy/case06")
+		err := Copy("testdata/doesNotExist", "testdata.copy/doesNotExist")
 		Expect(t, err).Not().ToBe(nil)
 	})
 
