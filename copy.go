@@ -1,7 +1,6 @@
 package copy
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -27,8 +26,6 @@ func CopyButSkipSome(src, dest string, toSkip []string) error {
 		toSkipMap[toSkip[i]] = struct{}{}
 	}
 
-	fmt.Println(toSkipMap)
-
 	info, err := os.Lstat(src)
 	if err != nil {
 		return err
@@ -40,10 +37,6 @@ func CopyButSkipSome(src, dest string, toSkip []string) error {
 // Because this "copy" could be called recursively,
 // "info" MUST be given here, NOT nil.
 func copy(src, dest string, toSkip map[string]struct{}, info os.FileInfo) error {
-	_, ock := toSkip[src]
-	fmt.Println(src)
-	fmt.Println(ock)
-
 	if _, isToSkip := toSkip[src]; isToSkip {
 		return nil
 	}
