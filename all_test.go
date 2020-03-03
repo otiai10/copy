@@ -73,13 +73,37 @@ func TestCopy(t *testing.T) {
 		Expect(t, info.Mode()&os.ModeSymlink).Not().ToBe(0)
 	})
 
+	When(t, "source directory includes a dangling symbolic link, but with option to follow it", func(t *testing.T) {
+		err := Copy("testdata/case03", "testdata.copy/case03", Opts{FollowSymlink: func(string) bool { return true }})
+		Expect(t, err).Not().ToBe(nil)
+	})
+
+	When(t, "source directory includes a symbolic link, but with option not to follow it", func(t *testing.T) {
+		err := Copy("testdata/case06", "testdata.copy/case06-2", Opts{FollowSymlink: func(string) bool { return true }})
+		Expect(t, err).ToBe(nil)
+		Expect(t, err).ToBe(nil)
+		info, err := os.Lstat("testdata.copy/case06-2/README.md")
+		Expect(t, err).ToBe(nil)
+		Expect(t, int(info.Mode()&os.ModeSymlink)).ToBe(0)
+	})
+
+	When(t, "source directory includes a symbolic link, but with option to follow it", func(t *testing.T) {
+		err := Copy("testdata/case06", "testdata.copy/case06")
+		Expect(t, err).ToBe(nil)
+		Expect(t, err).ToBe(nil)
+		info, err := os.Lstat("testdata.copy/case06/README.md")
+		Expect(t, err).ToBe(nil)
+		Expect(t, info.Mode()&os.ModeSymlink).ToBe(os.ModeSymlink)
+		os.RemoveAll("testdata.copy/case06")
+	})
+
 	When(t, "try to copy to an existing path", func(t *testing.T) {
 		err := Copy("testdata/case03", "testdata.copy/case03")
 		Expect(t, err).Not().ToBe(nil)
 	})
 
 	When(t, "try to copy READ-not-allowed source", func(t *testing.T) {
-		err := Copy("testdata/case06", "testdata.copy/case06")
+		err := Copy("testdata/case07", "testdata.copy/case07")
 		Expect(t, err).Not().ToBe(nil)
 	})
 

@@ -14,24 +14,41 @@ const (
 	tmpPermissionForDirectory = os.FileMode(0755)
 )
 
-// Copy copies src to dest, doesn't matter if src is a directory or a file
-func Copy(src, dest string) error {
+type Opts struct {
+	// FollowSymlink is called with a source path it is found to be a symlink. If
+	// this function returns false, Copy copies the symlink itself. Else, Copy
+	// follows the link.  If this field is not set, Copy never follows symlinks.
+	FollowSymlink func(path string) bool
+}
+
+// Copy copies src to dest, doesn't matter if src is a directory or a file.  An
+// optional arg opts specifies the options to the copy operations.  There can be
+// at most one opts.
+func Copy(src, dest string, opts ...Opts) error {
+	var opt Opts
+	if len(opts) > 0 {
+		if len(opts) > 1 {
+			panic("too many opts")
+		}
+		opt = opts[0]
+	}
 	info, err := os.Lstat(src)
 	if err != nil {
 		return err
 	}
-	return copy(src, dest, info)
+	return copy(src, dest, opt, info)
 }
 
 // copy dispatches copy-funcs according to the mode.
 // Because this "copy" could be called recursively,
 // "info" MUST be given here, NOT nil.
-func copy(src, dest string, info os.FileInfo) error {
-	if info.Mode()&os.ModeSymlink != 0 {
+func copy(src, dest string, opts Opts, info os.FileInfo) error {
+	if info.Mode()&os.ModeSymlink != 0 &&
+		(opts.FollowSymlink == nil || !opts.FollowSymlink(src)) {
 		return lcopy(src, dest, info)
 	}
 	if info.IsDir() {
-		return dcopy(src, dest, info)
+		return dcopy(src, dest, opts, info)
 	}
 	return fcopy(src, dest, info)
 }
@@ -68,7 +85,7 @@ func fcopy(src, dest string, info os.FileInfo) (err error) {
 // dcopy is for a directory,
 // with scanning contents inside the directory
 // and pass everything to "copy" recursively.
-func dcopy(srcdir, destdir string, info os.FileInfo) (err error) {
+func dcopy(srcdir, destdir string, opts Opts, info os.FileInfo) (err error) {
 
 	originalMode := info.Mode()
 
@@ -86,7 +103,7 @@ func dcopy(srcdir, destdir string, info os.FileInfo) (err error) {
 
 	for _, content := range contents {
 		cs, cd := filepath.Join(srcdir, content.Name()), filepath.Join(destdir, content.Name())
-		if err := copy(cs, cd, content); err != nil {
+		if err := copy(cs, cd, opts, content); err != nil {
 			// If any error, exit immediately
 			return err
 		}
