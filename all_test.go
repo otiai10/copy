@@ -73,28 +73,39 @@ func TestCopy(t *testing.T) {
 		Expect(t, info.Mode()&os.ModeSymlink).Not().ToBe(0)
 	})
 
-	When(t, "source directory includes a dangling symbolic link, but with option to follow it", func(t *testing.T) {
-		err := Copy("testdata/case03", "testdata.copy/case03", Opts{FollowSymlink: func(string) bool { return true }})
-		Expect(t, err).Not().ToBe(nil)
-	})
+	When(t, "symlink with Opt.OnSymlink provided", func(t *testing.T) {
+		opt := Options{OnSymlink: func(string) SymlinkAction { return Deep }}
+		err := Copy("testdata/case03", "testdata.copy/case03.deep", opt)
+		Expect(t, err).ToBe(nil)
+		info, err := os.Lstat("testdata.copy/case03.deep/case01")
+		Expect(t, err).ToBe(nil)
+		Expect(t, info.Mode()&os.ModeSymlink).ToBe(os.FileMode(0))
 
-	When(t, "source directory includes a symbolic link, but with option not to follow it", func(t *testing.T) {
-		err := Copy("testdata/case06", "testdata.copy/case06-2", Opts{FollowSymlink: func(string) bool { return true }})
+		opt = Options{OnSymlink: func(string) SymlinkAction { return Shallow }}
+		err = Copy("testdata/case03", "testdata.copy/case03.shallow", opt)
 		Expect(t, err).ToBe(nil)
+		info, err = os.Lstat("testdata.copy/case03.shallow/case01")
 		Expect(t, err).ToBe(nil)
-		info, err := os.Lstat("testdata.copy/case06-2/README.md")
-		Expect(t, err).ToBe(nil)
-		Expect(t, int(info.Mode()&os.ModeSymlink)).ToBe(0)
-	})
+		Expect(t, info.Mode()&os.ModeSymlink).Not().ToBe(os.FileMode(0))
 
-	When(t, "source directory includes a symbolic link, but with option to follow it", func(t *testing.T) {
-		err := Copy("testdata/case06", "testdata.copy/case06")
+		opt = Options{OnSymlink: func(string) SymlinkAction { return Skip }}
+		err = Copy("testdata/case03", "testdata.copy/case03.skip", opt)
 		Expect(t, err).ToBe(nil)
+		_, err = os.Stat("testdata.copy/case03.skip/case01")
+		Expect(t, os.IsNotExist(err)).ToBe(true)
+
+		err = Copy("testdata/case03", "testdata.copy/case03.default")
 		Expect(t, err).ToBe(nil)
-		info, err := os.Lstat("testdata.copy/case06/README.md")
+		info, err = os.Lstat("testdata.copy/case03.default/case01")
 		Expect(t, err).ToBe(nil)
-		Expect(t, info.Mode()&os.ModeSymlink).ToBe(os.ModeSymlink)
-		os.RemoveAll("testdata.copy/case06")
+		Expect(t, info.Mode()&os.ModeSymlink).Not().ToBe(os.FileMode(0))
+
+		opt = Options{OnSymlink: nil}
+		err = Copy("testdata/case03", "testdata.copy/case03.not-specified", opt)
+		Expect(t, err).ToBe(nil)
+		info, err = os.Lstat("testdata.copy/case03.not-specified/case01")
+		Expect(t, err).ToBe(nil)
+		Expect(t, info.Mode()&os.ModeSymlink).Not().ToBe(os.FileMode(0))
 	})
 
 	When(t, "try to copy to an existing path", func(t *testing.T) {
@@ -103,7 +114,7 @@ func TestCopy(t *testing.T) {
 	})
 
 	When(t, "try to copy READ-not-allowed source", func(t *testing.T) {
-		err := Copy("testdata/case07", "testdata.copy/case07")
+		err := Copy("testdata/case06", "testdata.copy/case06")
 		Expect(t, err).Not().ToBe(nil)
 	})
 

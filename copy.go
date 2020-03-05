@@ -14,41 +14,25 @@ const (
 	tmpPermissionForDirectory = os.FileMode(0755)
 )
 
-type Opts struct {
-	// FollowSymlink is called with a source path it is found to be a symlink. If
-	// this function returns false, Copy copies the symlink itself. Else, Copy
-	// follows the link.  If this field is not set, Copy never follows symlinks.
-	FollowSymlink func(path string) bool
-}
-
-// Copy copies src to dest, doesn't matter if src is a directory or a file.  An
-// optional arg opts specifies the options to the copy operations.  There can be
-// at most one opts.
-func Copy(src, dest string, opts ...Opts) error {
-	var opt Opts
-	if len(opts) > 0 {
-		if len(opts) > 1 {
-			panic("too many opts")
-		}
-		opt = opts[0]
-	}
+// Copy copies src to dest, doesn't matter if src is a directory or a file.
+func Copy(src, dest string, opt ...Options) error {
+	opt = append(opt, DefaultOptions)
 	info, err := os.Lstat(src)
 	if err != nil {
 		return err
 	}
-	return copy(src, dest, opt, info)
+	return copy(src, dest, info, opt[0])
 }
 
 // copy dispatches copy-funcs according to the mode.
 // Because this "copy" could be called recursively,
 // "info" MUST be given here, NOT nil.
-func copy(src, dest string, opts Opts, info os.FileInfo) error {
-	if info.Mode()&os.ModeSymlink != 0 &&
-		(opts.FollowSymlink == nil || !opts.FollowSymlink(src)) {
-		return lcopy(src, dest, info)
+func copy(src, dest string, info os.FileInfo, opt Options) error {
+	if info.Mode()&os.ModeSymlink != 0 {
+		return onsymlink(src, dest, info, opt)
 	}
 	if info.IsDir() {
-		return dcopy(src, dest, opts, info)
+		return dcopy(src, dest, info, opt)
 	}
 	return fcopy(src, dest, info)
 }
@@ -85,7 +69,7 @@ func fcopy(src, dest string, info os.FileInfo) (err error) {
 // dcopy is for a directory,
 // with scanning contents inside the directory
 // and pass everything to "copy" recursively.
-func dcopy(srcdir, destdir string, opts Opts, info os.FileInfo) (err error) {
+func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 
 	originalMode := info.Mode()
 
@@ -103,7 +87,7 @@ func dcopy(srcdir, destdir string, opts Opts, info os.FileInfo) (err error) {
 
 	for _, content := range contents {
 		cs, cd := filepath.Join(srcdir, content.Name()), filepath.Join(destdir, content.Name())
-		if err := copy(cs, cd, opts, content); err != nil {
+		if err := copy(cs, cd, content, opt); err != nil {
 			// If any error, exit immediately
 			return err
 		}
@@ -112,9 +96,35 @@ func dcopy(srcdir, destdir string, opts Opts, info os.FileInfo) (err error) {
 	return nil
 }
 
+func onsymlink(src, dest string, info os.FileInfo, opt Options) error {
+
+	if opt.OnSymlink == nil {
+		opt.OnSymlink = DefaultOptions.OnSymlink
+	}
+
+	switch opt.OnSymlink(src) {
+	case Shallow:
+		return lcopy(src, dest)
+	case Deep:
+		orig, err := os.Readlink(src)
+		if err != nil {
+			return err
+		}
+		info, err = os.Lstat(orig)
+		if err != nil {
+			return err
+		}
+		return copy(orig, dest, info, opt)
+	case Skip:
+		fallthrough
+	default:
+		return nil // do nothing
+	}
+}
+
 // lcopy is for a symlink,
 // with just creating a new symlink by replicating src symlink.
-func lcopy(src, dest string, info os.FileInfo) error {
+func lcopy(src, dest string) error {
 	src, err := os.Readlink(src)
 	if err != nil {
 		return err
