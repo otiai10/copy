@@ -16,21 +16,26 @@ const (
 
 // Copy copies src to dest, doesn't matter if src is a directory or a file.
 func Copy(src, dest string, opt ...Options) error {
-	opt = append(opt, DefaultOptions)
 	info, err := os.Lstat(src)
 	if err != nil {
 		return err
 	}
-	return copy(src, dest, info, opt[0])
+	return copy(src, dest, info, assure(opt...))
 }
 
 // copy dispatches copy-funcs according to the mode.
 // Because this "copy" could be called recursively,
 // "info" MUST be given here, NOT nil.
 func copy(src, dest string, info os.FileInfo, opt Options) error {
+
+	if opt.Skip(src) {
+		return nil
+	}
+
 	if info.Mode()&os.ModeSymlink != 0 {
 		return onsymlink(src, dest, info, opt)
 	}
+
 	if info.IsDir() {
 		return dcopy(src, dest, info, opt)
 	}
@@ -98,10 +103,6 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 
 func onsymlink(src, dest string, info os.FileInfo, opt Options) error {
 
-	if opt.OnSymlink == nil {
-		opt.OnSymlink = DefaultOptions.OnSymlink
-	}
-
 	switch opt.OnSymlink(src) {
 	case Shallow:
 		return lcopy(src, dest)
@@ -133,7 +134,8 @@ func lcopy(src, dest string) error {
 }
 
 // fclose ANYHOW closes file,
-// with asiging error occured BUT respecting the error already reported.
+// with asiging error raised during Close,
+// BUT respecting the error already reported.
 func fclose(f *os.File, reported *error) {
 	if err := f.Close(); *reported == nil {
 		*reported = err
@@ -141,9 +143,25 @@ func fclose(f *os.File, reported *error) {
 }
 
 // chmod ANYHOW changes file mode,
-// with asiging error occured BUT respecting the error already reported.
+// with asiging error raised during Chmod,
+// BUT respecting the error already reported.
 func chmod(dir string, mode os.FileMode, reported *error) {
 	if err := os.Chmod(dir, mode); *reported == nil {
 		*reported = err
 	}
+}
+
+// assure Options struct, should be called only once.
+// All optional values MUST NOT BE nil/zero after assured.
+func assure(opts ...Options) Options {
+	if len(opts) == 0 {
+		return DefaultOptions
+	}
+	if opts[0].OnSymlink == nil {
+		opts[0].OnSymlink = DefaultOptions.OnSymlink
+	}
+	if opts[0].Skip == nil {
+		opts[0].Skip = DefaultOptions.Skip
+	}
+	return opts[0]
 }
