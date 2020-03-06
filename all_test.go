@@ -73,6 +73,41 @@ func TestCopy(t *testing.T) {
 		Expect(t, info.Mode()&os.ModeSymlink).Not().ToBe(0)
 	})
 
+	When(t, "symlink with Opt.OnSymlink provided", func(t *testing.T) {
+		opt := Options{OnSymlink: func(string) SymlinkAction { return Deep }}
+		err := Copy("testdata/case03", "testdata.copy/case03.deep", opt)
+		Expect(t, err).ToBe(nil)
+		info, err := os.Lstat("testdata.copy/case03.deep/case01")
+		Expect(t, err).ToBe(nil)
+		Expect(t, info.Mode()&os.ModeSymlink).ToBe(os.FileMode(0))
+
+		opt = Options{OnSymlink: func(string) SymlinkAction { return Shallow }}
+		err = Copy("testdata/case03", "testdata.copy/case03.shallow", opt)
+		Expect(t, err).ToBe(nil)
+		info, err = os.Lstat("testdata.copy/case03.shallow/case01")
+		Expect(t, err).ToBe(nil)
+		Expect(t, info.Mode()&os.ModeSymlink).Not().ToBe(os.FileMode(0))
+
+		opt = Options{OnSymlink: func(string) SymlinkAction { return Skip }}
+		err = Copy("testdata/case03", "testdata.copy/case03.skip", opt)
+		Expect(t, err).ToBe(nil)
+		_, err = os.Stat("testdata.copy/case03.skip/case01")
+		Expect(t, os.IsNotExist(err)).ToBe(true)
+
+		err = Copy("testdata/case03", "testdata.copy/case03.default")
+		Expect(t, err).ToBe(nil)
+		info, err = os.Lstat("testdata.copy/case03.default/case01")
+		Expect(t, err).ToBe(nil)
+		Expect(t, info.Mode()&os.ModeSymlink).Not().ToBe(os.FileMode(0))
+
+		opt = Options{OnSymlink: nil}
+		err = Copy("testdata/case03", "testdata.copy/case03.not-specified", opt)
+		Expect(t, err).ToBe(nil)
+		info, err = os.Lstat("testdata.copy/case03.not-specified/case01")
+		Expect(t, err).ToBe(nil)
+		Expect(t, info.Mode()&os.ModeSymlink).Not().ToBe(os.FileMode(0))
+	})
+
 	When(t, "try to copy to an existing path", func(t *testing.T) {
 		err := Copy("testdata/case03", "testdata.copy/case03")
 		Expect(t, err).Not().ToBe(nil)

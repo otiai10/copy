@@ -15,38 +15,40 @@ const (
 )
 
 // Copy copies src to dest, doesn't matter if src is a directory or a file
-func Copy(src, dest string) error {
-	return CopyButSkipSome(src, dest, nil)
+func Copy(src, dest string, opt ...Options) error {
+	return CopyButSkipSome(src, dest, nil, opt...)
 }
 
-// CopyButSkipSome copies src to dest and skipping toSkip, doesn't matter if src is a directory or a file
-func CopyButSkipSome(src, dest string, toSkip []string) error {
+// Copy copies src to dest, doesn't matter if src is a directory or a file.
+func CopyButSkipSome(src, dest string, toSkip []string, opt ...Options) error {
 	toSkipMap := make(map[string]struct{})
 	for i := 0; i < len(toSkip); i++ {
 		toSkipMap[filepath.FromSlash(toSkip[i])] = struct{}{}
 	}
 
+	opt = append(opt, DefaultOptions)
 	info, err := os.Lstat(src)
 	if err != nil {
 		return err
 	}
-	return copy(src, dest, toSkipMap, info)
+
+	return copy(src, dest, toSkipMap, info, opt[0])
 }
 
 // copy dispatches copy-funcs according to the mode.
 // Because this "copy" could be called recursively,
 // "info" MUST be given here, NOT nil.
-func copy(src, dest string, toSkip map[string]struct{}, info os.FileInfo) error {
+func copy(src, dest string, toSkip map[string]struct{}, info os.FileInfo, opt Options) error {
 	if _, isToSkip := toSkip[src]; isToSkip {
 		return nil
 	}
 
 	if info.Mode()&os.ModeSymlink != 0 {
-		return lcopy(src, dest, info)
+		return onsymlink(src, dest, info, opt)
 	}
 
 	if info.IsDir() {
-		return dcopy(src, dest, toSkip, info)
+		return dcopy(src, dest, toSkip, info, opt)
 	}
 	return fcopy(src, dest, info)
 }
@@ -83,7 +85,7 @@ func fcopy(src, dest string, info os.FileInfo) (err error) {
 // dcopy is for a directory,
 // with scanning contents inside the directory
 // and pass everything to "copy" recursively.
-func dcopy(srcdir, destdir string, toSkip map[string]struct{}, info os.FileInfo) (err error) {
+func dcopy(srcdir, destdir string, toSkip map[string]struct{}, info os.FileInfo, opt Options) (err error) {
 
 	originalMode := info.Mode()
 
@@ -101,7 +103,7 @@ func dcopy(srcdir, destdir string, toSkip map[string]struct{}, info os.FileInfo)
 
 	for _, content := range contents {
 		cs, cd := filepath.Join(srcdir, content.Name()), filepath.Join(destdir, content.Name())
-		if err := copy(cs, cd, toSkip, content); err != nil {
+		if err := copy(cs, cd, toSkip, content, opt); err != nil {
 			// If any error, exit immediately
 			return err
 		}
@@ -110,9 +112,35 @@ func dcopy(srcdir, destdir string, toSkip map[string]struct{}, info os.FileInfo)
 	return nil
 }
 
+func onsymlink(src, dest string, info os.FileInfo, opt Options) error {
+
+	if opt.OnSymlink == nil {
+		opt.OnSymlink = DefaultOptions.OnSymlink
+	}
+
+	switch opt.OnSymlink(src) {
+	case Shallow:
+		return lcopy(src, dest)
+	case Deep:
+		orig, err := os.Readlink(src)
+		if err != nil {
+			return err
+		}
+		info, err = os.Lstat(orig)
+		if err != nil {
+			return err
+		}
+		return copy(orig, dest, nil, info, opt)
+	case Skip:
+		fallthrough
+	default:
+		return nil // do nothing
+	}
+}
+
 // lcopy is for a symlink,
 // with just creating a new symlink by replicating src symlink.
-func lcopy(src, dest string, info os.FileInfo) error {
+func lcopy(src, dest string) error {
 	src, err := os.Readlink(src)
 	if err != nil {
 		return err
