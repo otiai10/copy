@@ -23,7 +23,7 @@ func Copy(src, dest string) error {
 func CopyButSkipSome(src, dest string, toSkip []string) error {
 	toSkipMap := make(map[string]struct{})
 	for i := 0; i < len(toSkip); i++ {
-		toSkipMap[toSkip[i]] = struct{}{}
+		toSkipMap[filepath.FromSlash(toSkip[i])] = struct{}{}
 	}
 
 	info, err := os.Lstat(src)

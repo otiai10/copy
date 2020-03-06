@@ -105,7 +105,7 @@ func TestCopy(t *testing.T) {
 	})
 
 	When(t, "try to copy a directory with subdirectories to skip", func(t *testing.T) {
-		err := CopyButSkipSome("testdata/case06", "testdata.copy/case06", []string{"testdata\\case06\\caseFilesToSkip"})
+		err := CopyButSkipSome("testdata/case06", "testdata.copy/case06", []string{"testdata/case06/caseFilesToSkip"})
 		Expect(t, err).ToBe(nil)
 		info, err := os.Stat("./testdata.copy/case06/caseFilesToSkip/README.md")
 		Expect(t, err).Not().ToBe(nil)
