@@ -4,6 +4,8 @@ package copy
 type Options struct {
 	// OnSymlink can specify what to do on symlink
 	OnSymlink func(p string) SymlinkAction
+	// Skip can specify which files should be skipped
+	Skip func(src string) bool
 }
 
 // SymlinkAction represents what to do on symlink.
@@ -22,5 +24,8 @@ const (
 var DefaultOptions = Options{
 	OnSymlink: func(string) SymlinkAction {
 		return Shallow
+	},
+	Skip: func(string) bool {
+		return false
 	},
 }

@@ -16,30 +16,19 @@ const (
 
 // Copy copies src to dest, doesn't matter if src is a directory or a file
 func Copy(src, dest string, opt ...Options) error {
-	return CopyButSkipSome(src, dest, nil, opt...)
-}
-
-// Copy copies src to dest, doesn't matter if src is a directory or a file.
-func CopyButSkipSome(src, dest string, toSkip []string, opt ...Options) error {
-	toSkipMap := make(map[string]struct{})
-	for i := 0; i < len(toSkip); i++ {
-		toSkipMap[filepath.FromSlash(toSkip[i])] = struct{}{}
-	}
-
-	opt = append(opt, DefaultOptions)
 	info, err := os.Lstat(src)
 	if err != nil {
 		return err
 	}
-
-	return copy(src, dest, toSkipMap, info, opt[0])
+	return copy(src, dest, info, assure(opt...))
 }
 
 // copy dispatches copy-funcs according to the mode.
 // Because this "copy" could be called recursively,
 // "info" MUST be given here, NOT nil.
-func copy(src, dest string, toSkip map[string]struct{}, info os.FileInfo, opt Options) error {
-	if _, isToSkip := toSkip[src]; isToSkip {
+func copy(src, dest string, info os.FileInfo, opt Options) error {
+
+	if opt.Skip(src) {
 		return nil
 	}
 
@@ -48,7 +37,7 @@ func copy(src, dest string, toSkip map[string]struct{}, info os.FileInfo, opt Op
 	}
 
 	if info.IsDir() {
-		return dcopy(src, dest, toSkip, info, opt)
+		return dcopy(src, dest, info, opt)
 	}
 	return fcopy(src, dest, info)
 }
@@ -85,7 +74,7 @@ func fcopy(src, dest string, info os.FileInfo) (err error) {
 // dcopy is for a directory,
 // with scanning contents inside the directory
 // and pass everything to "copy" recursively.
-func dcopy(srcdir, destdir string, toSkip map[string]struct{}, info os.FileInfo, opt Options) (err error) {
+func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 
 	originalMode := info.Mode()
 
@@ -103,7 +92,7 @@ func dcopy(srcdir, destdir string, toSkip map[string]struct{}, info os.FileInfo,
 
 	for _, content := range contents {
 		cs, cd := filepath.Join(srcdir, content.Name()), filepath.Join(destdir, content.Name())
-		if err := copy(cs, cd, toSkip, content, opt); err != nil {
+		if err := copy(cs, cd, content, opt); err != nil {
 			// If any error, exit immediately
 			return err
 		}
@@ -113,10 +102,6 @@ func dcopy(srcdir, destdir string, toSkip map[string]struct{}, info os.FileInfo,
 }
 
 func onsymlink(src, dest string, info os.FileInfo, opt Options) error {
-
-	if opt.OnSymlink == nil {
-		opt.OnSymlink = DefaultOptions.OnSymlink
-	}
 
 	switch opt.OnSymlink(src) {
 	case Shallow:
@@ -130,7 +115,7 @@ func onsymlink(src, dest string, info os.FileInfo, opt Options) error {
 		if err != nil {
 			return err
 		}
-		return copy(orig, dest, nil, info, opt)
+		return copy(orig, dest, info, opt)
 	case Skip:
 		fallthrough
 	default:
@@ -162,4 +147,19 @@ func chmod(dir string, mode os.FileMode, reported *error) {
 	if err := os.Chmod(dir, mode); *reported == nil {
 		*reported = err
 	}
+}
+
+// assure Options struct, should be called only once.
+// All optional values MUST NOT BE nil/zero after assured.
+func assure(opts ...Options) Options {
+	if len(opts) == 0 {
+		return DefaultOptions
+	}
+	if opts[0].OnSymlink == nil {
+		opts[0].OnSymlink = DefaultOptions.OnSymlink
+	}
+	if opts[0].Skip == nil {
+		opts[0].Skip = DefaultOptions.Skip
+	}
+	return opts[0]
 }

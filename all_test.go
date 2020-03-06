@@ -3,6 +3,7 @@ package copy
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	. "github.com/otiai10/mint"
@@ -139,11 +140,20 @@ func TestCopy(t *testing.T) {
 		Expect(t, err).ToBe(nil)
 	})
 
-	When(t, "try to copy a directory with subdirectories to skip", func(t *testing.T) {
-		err := CopyButSkipSome("testdata/case06", "testdata.copy/case06", []string{"testdata/case06/caseFilesToSkip"})
+	When(t, "Options.Skip provided", func(t *testing.T) {
+		opt := Options{Skip: func(src string) bool { return strings.HasSuffix(src, "_skip") }}
+		err := Copy("testdata/case06", "testdata.copy/case06", opt)
 		Expect(t, err).ToBe(nil)
-		info, err := os.Stat("./testdata.copy/case06/caseFilesToSkip/README.md")
-		Expect(t, err).Not().ToBe(nil)
+		info, err := os.Stat("./testdata.copy/case06/dir_skip")
 		Expect(t, info).ToBe(nil)
+		Expect(t, os.IsNotExist(err)).ToBe(true)
+
+		info, err = os.Stat("./testdata.copy/case06/file_skip")
+		Expect(t, info).ToBe(nil)
+		Expect(t, os.IsNotExist(err)).ToBe(true)
+
+		info, err = os.Stat("./testdata.copy/case06/README.md")
+		Expect(t, info).Not().ToBe(nil)
+		Expect(t, err).ToBe(nil)
 	})
 }
