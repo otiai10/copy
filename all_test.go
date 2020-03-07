@@ -141,7 +141,16 @@ func TestCopy(t *testing.T) {
 	})
 
 	When(t, "Options.Skip provided", func(t *testing.T) {
-		opt := Options{Skip: func(src string) bool { return strings.HasSuffix(src, "_skip") }}
+		opt := Options{Skip: func(src string) bool {
+			switch {
+			case strings.HasSuffix(src, "_skip"):
+				return true
+			case strings.HasSuffix(src, ".gitfake"):
+				return true
+			default:
+				return false
+			}
+		}}
 		err := Copy("testdata/case06", "testdata.copy/case06", opt)
 		Expect(t, err).ToBe(nil)
 		info, err := os.Stat("./testdata.copy/case06/dir_skip")
@@ -153,6 +162,14 @@ func TestCopy(t *testing.T) {
 		Expect(t, os.IsNotExist(err)).ToBe(true)
 
 		info, err = os.Stat("./testdata.copy/case06/README.md")
+		Expect(t, info).Not().ToBe(nil)
+		Expect(t, err).ToBe(nil)
+
+		info, err = os.Stat("./testdata.copy/case06/repo/.gitfake")
+		Expect(t, info).ToBe(nil)
+		Expect(t, os.IsNotExist(err)).ToBe(true)
+
+		info, err = os.Stat("./testdata.copy/case06/repo/README.md")
 		Expect(t, info).Not().ToBe(nil)
 		Expect(t, err).ToBe(nil)
 	})
