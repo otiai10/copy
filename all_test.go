@@ -19,6 +19,8 @@ func TestMain(m *testing.M) {
 func setup(m *testing.M) {
 	os.MkdirAll("testdata.copy", os.ModePerm)
 	os.Symlink("testdata/case01", "testdata/case03/case01")
+	os.Chmod("testdata/case07/dir_0500", 0500)
+	os.Chmod("testdata/case07/file_0444", 0444)
 }
 
 func teardown(m *testing.M) {
