@@ -39,13 +39,13 @@ func copy(src, dest string, info os.FileInfo, opt Options) error {
 	if info.IsDir() {
 		return dcopy(src, dest, info, opt)
 	}
-	return fcopy(src, dest, info)
+	return fcopy(src, dest, info, opt)
 }
 
 // fcopy is for just a file,
 // with considering existence of parent directory
 // and file permission.
-func fcopy(src, dest string, info os.FileInfo) (err error) {
+func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 
 	if err := os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
 		return err
@@ -57,7 +57,7 @@ func fcopy(src, dest string, info os.FileInfo) (err error) {
 	}
 	defer fclose(f, &err)
 
-	if err = os.Chmod(f.Name(), info.Mode()); err != nil {
+	if err = os.Chmod(f.Name(), info.Mode()|opt.AddPermission); err != nil {
 		return err
 	}
 
@@ -83,7 +83,7 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 		return err
 	}
 	// Recover dir mode with original one.
-	defer chmod(destdir, originalMode, &err)
+	defer chmod(destdir, originalMode|opt.AddPermission, &err)
 
 	contents, err := ioutil.ReadDir(srcdir)
 	if err != nil {
