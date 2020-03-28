@@ -29,4 +29,10 @@ jobs:
       run: go build -v .
 
     - name: Test
-      run: go test -v -race -cover
+      run: go test -v -cover -race -coverprofile=coverage.txt -covermode=atomic
+
+    - name: Upload Coverage
+      if: success()
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      run: bash <(curl -s https://codecov.io/bash)
