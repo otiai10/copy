@@ -5,7 +5,7 @@ import "os"
 // Options specifies optional actions on copying.
 type Options struct {
 	// OnSymlink can specify what to do on symlink
-	OnSymlink func(p string) SymlinkAction
+	OnSymlink func(src string) SymlinkAction
 	// Skip can specify which files should be skipped
 	Skip func(src string) bool
 	// AddPermission to every entities,
