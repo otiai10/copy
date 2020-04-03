@@ -155,13 +155,14 @@ func chmod(dir string, mode os.FileMode, reported *error) {
 // All optional values MUST NOT BE nil/zero after assured.
 func assure(opts ...Options) Options {
 	if len(opts) == 0 {
-		return DefaultOptions
+		return getDefaultOptions()
 	}
+	defopt := getDefaultOptions()
 	if opts[0].OnSymlink == nil {
-		opts[0].OnSymlink = DefaultOptions.OnSymlink
+		opts[0].OnSymlink = defopt.OnSymlink
 	}
 	if opts[0].Skip == nil {
-		opts[0].Skip = DefaultOptions.Skip
+		opts[0].Skip = defopt.Skip
 	}
 	return opts[0]
 }

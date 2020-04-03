@@ -25,13 +25,16 @@ const (
 	Skip
 )
 
-// DefaultOptions by default.
-var DefaultOptions = Options{
-	OnSymlink: func(string) SymlinkAction {
-		return Shallow // Do shallow copy
-	},
-	Skip: func(string) bool {
-		return false // Don't skip
-	},
-	AddPermission: 0, // Add nothing
+// getDefaultOptions provides default options,
+// which would be modified by usage-side.
+func getDefaultOptions() Options {
+	return Options{
+		OnSymlink: func(string) SymlinkAction {
+			return Shallow // Do shallow copy
+		},
+		Skip: func(string) bool {
+			return false // Don't skip
+		},
+		AddPermission: 0, // Add nothing
+	}
 }
