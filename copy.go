@@ -67,6 +67,10 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 	}
 	defer fclose(s, &err)
 
+	if opt.Sync {
+		defer fsync(f, &err)
+	}
+
 	_, err = io.Copy(f, s)
 	return err
 }
@@ -138,6 +142,15 @@ func lcopy(src, dest string) error {
 // BUT respecting the error already reported.
 func fclose(f *os.File, reported *error) {
 	if err := f.Close(); *reported == nil {
+		*reported = err
+	}
+}
+
+// fsync ANYHOW closes file,
+// with asiging error raised during Close,
+// BUT respecting the error already reported.
+func fsync(f *os.File, reported *error) {
+	if err := f.Sync(); *reported == nil {
 		*reported = err
 	}
 }
