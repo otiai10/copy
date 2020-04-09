@@ -146,8 +146,8 @@ func fclose(f *os.File, reported *error) {
 	}
 }
 
-// fsync ANYHOW closes file,
-// with asiging error raised during Close,
+// fsync ANYHOW flushes file to the disk,
+// with asiging error raised during Sync,
 // BUT respecting the error already reported.
 func fsync(f *os.File, reported *error) {
 	if err := f.Sync(); *reported == nil {

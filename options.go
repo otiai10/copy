@@ -11,7 +11,10 @@ type Options struct {
 	// AddPermission to every entities,
 	// NO MORE THAN 0777
 	AddPermission os.FileMode
-	// Sync file after copy
+	// Sync file after copy.
+	// Useful in case when file must be on the disk
+	// (in case crash happens, for example),
+	// at the expense of some performance penalty
 	Sync bool
 }
 
