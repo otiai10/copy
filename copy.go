@@ -47,35 +47,35 @@ func copy(src, dest string, info os.FileInfo, opt Options) error {
 // and file permission.
 func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 
-	if err := os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
-		return err
+	if err = os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
+		return
 	}
 
 	f, err := os.Create(dest)
 	if err != nil {
-		return err
+		return
 	}
 	defer fclose(f, &err)
 
 	if err = os.Chmod(f.Name(), info.Mode()|opt.AddPermission); err != nil {
-		return err
+		return
 	}
 
 	s, err := os.Open(src)
 	if err != nil {
-		return err
+		return
 	}
 	defer fclose(s, &err)
 
 	if _, err = io.Copy(f, s); err != nil {
-		return err
+		return
 	}
 
 	if opt.Sync {
-		return f.Sync()
+		err = f.Sync()
 	}
 
-	return nil
+	return
 }
 
 // dcopy is for a directory,
