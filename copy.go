@@ -67,12 +67,15 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 	}
 	defer fclose(s, &err)
 
-	if opt.Sync {
-		defer fsync(f, &err)
+	if _, err = io.Copy(f, s); err != nil {
+		return err
 	}
 
-	_, err = io.Copy(f, s)
-	return err
+	if opt.Sync {
+		return f.Sync()
+	}
+
+	return nil
 }
 
 // dcopy is for a directory,
@@ -142,15 +145,6 @@ func lcopy(src, dest string) error {
 // BUT respecting the error already reported.
 func fclose(f *os.File, reported *error) {
 	if err := f.Close(); *reported == nil {
-		*reported = err
-	}
-}
-
-// fsync ANYHOW flushes file to the disk,
-// with asiging error raised during Sync,
-// BUT respecting the error already reported.
-func fsync(f *os.File, reported *error) {
-	if err := f.Sync(); *reported == nil {
 		*reported = err
 	}
 }
