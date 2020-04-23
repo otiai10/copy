@@ -47,28 +47,35 @@ func copy(src, dest string, info os.FileInfo, opt Options) error {
 // and file permission.
 func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 
-	if err := os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
-		return err
+	if err = os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
+		return
 	}
 
 	f, err := os.Create(dest)
 	if err != nil {
-		return err
+		return
 	}
 	defer fclose(f, &err)
 
 	if err = os.Chmod(f.Name(), info.Mode()|opt.AddPermission); err != nil {
-		return err
+		return
 	}
 
 	s, err := os.Open(src)
 	if err != nil {
-		return err
+		return
 	}
 	defer fclose(s, &err)
 
-	_, err = io.Copy(f, s)
-	return err
+	if _, err = io.Copy(f, s); err != nil {
+		return
+	}
+
+	if opt.Sync {
+		err = f.Sync()
+	}
+
+	return
 }
 
 // dcopy is for a directory,
@@ -79,26 +86,26 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 	originalMode := info.Mode()
 
 	// Make dest dir with 0755 so that everything writable.
-	if err := os.MkdirAll(destdir, tmpPermissionForDirectory); err != nil {
-		return err
+	if err = os.MkdirAll(destdir, tmpPermissionForDirectory); err != nil {
+		return
 	}
 	// Recover dir mode with original one.
 	defer chmod(destdir, originalMode|opt.AddPermission, &err)
 
 	contents, err := ioutil.ReadDir(srcdir)
 	if err != nil {
-		return err
+		return
 	}
 
 	for _, content := range contents {
 		cs, cd := filepath.Join(srcdir, content.Name()), filepath.Join(destdir, content.Name())
-		if err := copy(cs, cd, content, opt); err != nil {
+		if err = copy(cs, cd, content, opt); err != nil {
 			// If any error, exit immediately
-			return err
+			return
 		}
 	}
 
-	return nil
+	return
 }
 
 func onsymlink(src, dest string, info os.FileInfo, opt Options) error {

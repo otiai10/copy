@@ -198,4 +198,12 @@ func TestCopy(t *testing.T) {
 		Expect(t, err).ToBe(nil)
 		Expect(t, info.Mode()).ToBe(os.FileMode(0444 | 0200))
 	})
+
+	When(t, "Options.Sync provided", func(t *testing.T) {
+		// With Sync option, each file will be flushed to storage on copying.
+		// TODO: Since it's a bit hard to simulate real usecases here. This testcase is nonsense.
+		opt := Options{Sync: true}
+		err = Copy("testdata/case08", "testdata.copy/case08", opt)
+		Expect(t, err).ToBe(nil)
+	})
 }

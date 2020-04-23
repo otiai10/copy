@@ -11,6 +11,11 @@ type Options struct {
 	// AddPermission to every entities,
 	// NO MORE THAN 0777
 	AddPermission os.FileMode
+	// Sync file after copy.
+	// Useful in case when file must be on the disk
+	// (in case crash happens, for example),
+	// at the expense of some performance penalty
+	Sync bool
 }
 
 // SymlinkAction represents what to do on symlink.
@@ -35,6 +40,7 @@ func getDefaultOptions() Options {
 		Skip: func(string) bool {
 			return false // Don't skip
 		},
-		AddPermission: 0, // Add nothing
+		AddPermission: 0,     // Add nothing
+		Sync:          false, // Do not sync
 	}
 }
