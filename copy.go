@@ -20,18 +20,14 @@ func Copy(src, dest string, opt ...Options) error {
 	if err != nil {
 		return err
 	}
-	return copy(src, dest, info, assure(opt...))
+	return copyDispatcher(src, dest, info, assure(opt...)) // To ignore skip logic for root entry
 }
 
-// copy dispatches copy-funcs according to the mode.
-// Because this "copy" could be called recursively,
+// copyDispatcher dispatches copy-funcs according to the mode.
+// Because this function could be called recursively
+// (copyDispatcher -> copy-func by mode -> copy -> copyDispatcher)
 // "info" MUST be given here, NOT nil.
-func copy(src, dest string, info os.FileInfo, opt Options) error {
-
-	if opt.Skip(src) {
-		return nil
-	}
-
+func copyDispatcher(src, dest string, info os.FileInfo, opt Options) error {
 	if info.Mode()&os.ModeSymlink != 0 {
 		return onsymlink(src, dest, info, opt)
 	}
@@ -40,6 +36,15 @@ func copy(src, dest string, info os.FileInfo, opt Options) error {
 		return dcopy(src, dest, info, opt)
 	}
 	return fcopy(src, dest, info, opt)
+}
+
+// copy implements the extension of copyDispatcher function
+// by checking whether it is necessary to skip the file.
+func copy(src, dest string, info os.FileInfo, opt Options) error {
+	if opt.Skip(src, info) {
+		return nil
+	}
+	return copyDispatcher(src, dest, info, opt)
 }
 
 // fcopy is for just a file,

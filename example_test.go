@@ -24,7 +24,7 @@ func ExampleOptions() {
 		"testdata/example",
 		"testdata.copy/example_with_options",
 		Options{
-			Skip: func(src string) bool {
+			Skip: func(src string, info os.FileInfo) bool {
 				return strings.HasSuffix(src, ".git-like")
 			},
 			OnSymlink: func(src string) SymlinkAction {

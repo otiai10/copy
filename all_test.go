@@ -143,37 +143,55 @@ func TestCopy(t *testing.T) {
 	})
 
 	When(t, "Options.Skip provided", func(t *testing.T) {
-		opt := Options{Skip: func(src string) bool {
-			switch {
-			case strings.HasSuffix(src, "_skip"):
-				return true
-			case strings.HasSuffix(src, ".gitfake"):
-				return true
-			default:
-				return false
-			}
-		}}
-		err := Copy("testdata/case06", "testdata.copy/case06", opt)
-		Expect(t, err).ToBe(nil)
-		info, err := os.Stat("./testdata.copy/case06/dir_skip")
-		Expect(t, info).ToBe(nil)
-		Expect(t, os.IsNotExist(err)).ToBe(true)
+		ExpectIsExist := func(path string) {
+			info, err := os.Stat(path)
+			Expect(t, err).ToBe(nil)
+			Expect(t, info).Not().ToBe(nil)
+		}
 
-		info, err = os.Stat("./testdata.copy/case06/file_skip")
-		Expect(t, info).ToBe(nil)
-		Expect(t, os.IsNotExist(err)).ToBe(true)
+		ExpectIsNotExist := func(path string) {
+			info, err := os.Stat(path)
+			Expect(t, os.IsNotExist(err)).ToBe(true)
+			Expect(t, info).ToBe(nil)
+		}
 
-		info, err = os.Stat("./testdata.copy/case06/README.md")
-		Expect(t, info).Not().ToBe(nil)
-		Expect(t, err).ToBe(nil)
+		// Skip by name suffix
+		{
+			opt := Options{Skip: func(src string, _ os.FileInfo) bool {
+				switch {
+				case strings.HasSuffix(src, "_skip"):
+					return true
+				case strings.HasSuffix(src, ".gitfake"):
+					return true
+				default:
+					return false
+				}
+			}}
+			err := Copy("testdata/case06", "testdata.copy/case06.0", opt)
+			Expect(t, err).ToBe(nil)
 
-		info, err = os.Stat("./testdata.copy/case06/repo/.gitfake")
-		Expect(t, info).ToBe(nil)
-		Expect(t, os.IsNotExist(err)).ToBe(true)
+			ExpectIsExist("./testdata.copy/case06.0")
+			ExpectIsNotExist("./testdata.copy/case06.0/dir_skip")
+			ExpectIsNotExist("./testdata.copy/case06.0/repo/.gitfake")
+			ExpectIsExist("./testdata.copy/case06.0/repo/README.md")
+			ExpectIsNotExist("./testdata.copy/case06.0/file_skip")
+			ExpectIsExist("./testdata.copy/case06.0/README.md")
+		}
 
-		info, err = os.Stat("./testdata.copy/case06/repo/README.md")
-		Expect(t, info).Not().ToBe(nil)
-		Expect(t, err).ToBe(nil)
+		// Skip by file info
+		{
+			opt := Options{Skip: func(_ string, info os.FileInfo) bool {
+				return info.IsDir()
+			}}
+			err := Copy("testdata/case06", "testdata.copy/case06.1", opt)
+			Expect(t, err).ToBe(nil)
+
+			ExpectIsExist("./testdata.copy/case06.1")
+			ExpectIsNotExist("./testdata.copy/case06.1/dir_skip")
+			ExpectIsNotExist("./testdata.copy/case06.1/repo")
+			ExpectIsExist("./testdata.copy/case06.1/file_skip")
+			ExpectIsExist("./testdata.copy/case06.1/README.md")
+		}
 	})
 
 	When(t, "Options.AddPermission provided", func(t *testing.T) {
