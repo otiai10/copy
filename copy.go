@@ -98,9 +98,16 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 		return
 	}
 
+	var skip bool
 	for _, content := range contents {
 		cs, cd := filepath.Join(srcdir, content.Name()), filepath.Join(destdir, content.Name())
-		if err = copy(cs, cd, content, opt.Skip(cs), opt); err != nil {
+
+		skip, err = opt.Skip(cs)
+		if err != nil {
+			return
+		}
+
+		if err = copy(cs, cd, content, skip, opt); err != nil {
 			// If any error, exit immediately
 			return
 		}
@@ -123,7 +130,11 @@ func onsymlink(src, dest string, info os.FileInfo, opt Options) error {
 		if err != nil {
 			return err
 		}
-		return copy(orig, dest, info, opt.Skip(orig), opt)
+		skip, err := opt.Skip(orig)
+		if err != nil {
+			return err
+		}
+		return copy(orig, dest, info, skip, opt)
 	case Skip:
 		fallthrough
 	default:

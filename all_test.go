@@ -1,6 +1,8 @@
 package copy
 
 import (
+	"errors"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -143,14 +145,14 @@ func TestCopy(t *testing.T) {
 	})
 
 	When(t, "Options.Skip provided", func(t *testing.T) {
-		opt := Options{Skip: func(src string) bool {
+		opt := Options{Skip: func(src string) (bool, error) {
 			switch {
 			case strings.HasSuffix(src, "_skip"):
-				return true
+				return true, nil
 			case strings.HasSuffix(src, ".gitfake"):
-				return true
+				return true, nil
 			default:
-				return false
+				return false, nil
 			}
 		}}
 		err := Copy("testdata/case06", "testdata.copy/case06", opt)
@@ -174,6 +176,18 @@ func TestCopy(t *testing.T) {
 		info, err = os.Stat("./testdata.copy/case06/repo/README.md")
 		Expect(t, info).Not().ToBe(nil)
 		Expect(t, err).ToBe(nil)
+
+		var skipErr = errors.New("skip err")
+
+		opt = Options{Skip: func(src string) (bool, error) {
+			return false, skipErr
+		}}
+		err = Copy("testdata/case06", "testdata.copy/case06.01", opt)
+		Expect(t, err).ToBe(skipErr)
+
+		files, err := ioutil.ReadDir("./testdata.copy/case06.01")
+		Expect(t, err).ToBe(nil)
+		Expect(t, len(files)).ToBe(0)
 	})
 
 	When(t, "Options.AddPermission provided", func(t *testing.T) {
