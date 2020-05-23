@@ -7,7 +7,7 @@ type Options struct {
 	// OnSymlink can specify what to do on symlink
 	OnSymlink func(src string) SymlinkAction
 	// Skip can specify which files should be skipped
-	Skip func(src string, info os.FileInfo) bool
+	Skip func(src string) bool
 	// AddPermission to every entities,
 	// NO MORE THAN 0777
 	AddPermission os.FileMode
@@ -37,7 +37,7 @@ func getDefaultOptions() Options {
 		OnSymlink: func(string) SymlinkAction {
 			return Shallow // Do shallow copy
 		},
-		Skip: func(string, os.FileInfo) bool {
+		Skip: func(string) bool {
 			return false // Don't skip
 		},
 		AddPermission: 0,     // Add nothing
