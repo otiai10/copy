@@ -20,15 +20,16 @@ func Copy(src, dest string, opt ...Options) error {
 	if err != nil {
 		return err
 	}
-	return copy(src, dest, info, assure(opt...))
+	options := assure(opt...)
+	return copy(src, dest, info, false, options)
 }
 
 // copy dispatches copy-funcs according to the mode.
 // Because this "copy" could be called recursively,
 // "info" MUST be given here, NOT nil.
-func copy(src, dest string, info os.FileInfo, opt Options) error {
+func copy(src, dest string, info os.FileInfo, skip bool, opt Options) error {
 
-	if opt.Skip(src) {
+	if skip {
 		return nil
 	}
 
@@ -99,7 +100,7 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 
 	for _, content := range contents {
 		cs, cd := filepath.Join(srcdir, content.Name()), filepath.Join(destdir, content.Name())
-		if err = copy(cs, cd, content, opt); err != nil {
+		if err = copy(cs, cd, content, opt.Skip(cs), opt); err != nil {
 			// If any error, exit immediately
 			return
 		}
@@ -122,7 +123,7 @@ func onsymlink(src, dest string, info os.FileInfo, opt Options) error {
 		if err != nil {
 			return err
 		}
-		return copy(orig, dest, info, opt)
+		return copy(orig, dest, info, opt.Skip(orig), opt)
 	case Skip:
 		fallthrough
 	default:
