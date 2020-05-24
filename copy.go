@@ -20,27 +20,34 @@ func Copy(src, dest string, opt ...Options) error {
 	if err != nil {
 		return err
 	}
-	options := assure(opt...)
-	return copy(src, dest, info, false, options)
+	return switchboard(src, dest, info, assure(opt...))
 }
 
-// copy dispatches copy-funcs according to the mode.
+// switchboard switches proper copy functions regarding file type, etc...
+// If there would be anything else here, add a case to this switchboard.
+func switchboard(src, dest string, info os.FileInfo, opt Options) error {
+	switch {
+	case info.Mode()&os.ModeSymlink != 0:
+		return onsymlink(src, dest, info, opt)
+	case info.IsDir():
+		return dcopy(src, dest, info, opt)
+	default:
+		return fcopy(src, dest, info, opt)
+	}
+}
+
+// copy decide if this src should be copied or not.
 // Because this "copy" could be called recursively,
 // "info" MUST be given here, NOT nil.
-func copy(src, dest string, info os.FileInfo, skip bool, opt Options) error {
-
+func copy(src, dest string, info os.FileInfo, opt Options) error {
+	skip, err := opt.Skip(src)
+	if err != nil {
+		return err
+	}
 	if skip {
 		return nil
 	}
-
-	if info.Mode()&os.ModeSymlink != 0 {
-		return onsymlink(src, dest, info, opt)
-	}
-
-	if info.IsDir() {
-		return dcopy(src, dest, info, opt)
-	}
-	return fcopy(src, dest, info, opt)
+	return switchboard(src, dest, info, opt)
 }
 
 // fcopy is for just a file,
@@ -98,16 +105,10 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 		return
 	}
 
-	var skip bool
 	for _, content := range contents {
 		cs, cd := filepath.Join(srcdir, content.Name()), filepath.Join(destdir, content.Name())
 
-		skip, err = opt.Skip(cs)
-		if err != nil {
-			return
-		}
-
-		if err = copy(cs, cd, content, skip, opt); err != nil {
+		if err = copy(cs, cd, content, opt); err != nil {
 			// If any error, exit immediately
 			return
 		}
@@ -130,11 +131,7 @@ func onsymlink(src, dest string, info os.FileInfo, opt Options) error {
 		if err != nil {
 			return err
 		}
-		skip, err := opt.Skip(orig)
-		if err != nil {
-			return err
-		}
-		return copy(orig, dest, info, skip, opt)
+		return copy(orig, dest, info, opt)
 	case Skip:
 		fallthrough
 	default:
