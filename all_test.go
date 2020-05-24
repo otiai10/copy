@@ -177,17 +177,17 @@ func TestCopy(t *testing.T) {
 		Expect(t, info).Not().ToBe(nil)
 		Expect(t, err).ToBe(nil)
 
-		var skipErr = errors.New("skip err")
-
-		opt = Options{Skip: func(src string) (bool, error) {
-			return false, skipErr
-		}}
-		err = Copy("testdata/case06", "testdata.copy/case06.01", opt)
-		Expect(t, err).ToBe(skipErr)
-
-		files, err := ioutil.ReadDir("./testdata.copy/case06.01")
-		Expect(t, err).ToBe(nil)
-		Expect(t, len(files)).ToBe(0)
+		Because(t, "if Skip func returns error, Copy should be interrupted", func(t *testing.T) {
+			errInsideSkipFunc := errors.New("Something wrong inside Skip")
+			opt := Options{Skip: func(src string) (bool, error) {
+				return false, errInsideSkipFunc
+			}}
+			err := Copy("testdata/case06", "testdata.copy/case06.01", opt)
+			Expect(t, err).ToBe(errInsideSkipFunc)
+			files, err := ioutil.ReadDir("./testdata.copy/case06.01")
+			Expect(t, err).ToBe(nil)
+			Expect(t, len(files)).ToBe(0)
+		})
 	})
 
 	When(t, "Options.AddPermission provided", func(t *testing.T) {
