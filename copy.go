@@ -146,6 +146,12 @@ func lcopy(src, dest string) error {
 	if err != nil {
 		return err
 	}
+
+	// Create the directories on the path to the dest symlink.
+	if err = os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
+		return err
+	}
+
 	return os.Symlink(src, dest)
 }
 

@@ -3,6 +3,7 @@ package copy
 import (
 	"errors"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,17 +13,33 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	setup(m)
+	if err := setup(m); err != nil {
+		teardown(m)
+		log.Fatalf("failed setup: %v", err)
+	}
 	code := m.Run()
 	teardown(m)
 	os.Exit(code)
 }
 
-func setup(m *testing.M) {
-	os.MkdirAll("testdata.copy", os.ModePerm)
-	os.Symlink("testdata/case01", "testdata/case03/case01")
-	os.Chmod("testdata/case07/dir_0500", 0500)
-	os.Chmod("testdata/case07/file_0444", 0444)
+func setup(m *testing.M) error {
+	if err := os.MkdirAll("testdata.copy", os.ModePerm); err != nil {
+		return err
+	}
+
+	if err := os.Symlink("testdata/case01", "testdata/case03/case01"); err != nil {
+		return err
+	}
+
+	if err := os.Chmod("testdata/case07/dir_0500", 0500); err != nil {
+		return err
+	}
+
+	if err := os.Chmod("testdata/case07/file_0444", 0444); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func teardown(m *testing.M) {
