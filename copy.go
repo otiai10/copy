@@ -28,7 +28,7 @@ func Copy(src, dest string, opt ...Options) error {
 func switchboard(src, dest string, info os.FileInfo, opt Options) error {
 	switch {
 	case info.Mode()&os.ModeSymlink != 0:
-		return onsymlink(src, dest, info, opt)
+		return onsymlink(src, dest, opt)
 	case info.IsDir():
 		return dcopy(src, dest, info, opt)
 	default:
@@ -117,7 +117,7 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 	return
 }
 
-func onsymlink(src, dest string, info os.FileInfo, opt Options) error {
+func onsymlink(src, dest string, opt Options) error {
 
 	switch opt.OnSymlink(src) {
 	case Shallow:
@@ -127,7 +127,7 @@ func onsymlink(src, dest string, info os.FileInfo, opt Options) error {
 		if err != nil {
 			return err
 		}
-		info, err = os.Lstat(orig)
+		info, err := os.Lstat(orig)
 		if err != nil {
 			return err
 		}
