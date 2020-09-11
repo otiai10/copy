@@ -123,7 +123,7 @@ func onsymlink(src, dest string, info os.FileInfo, opt Options) error {
 	case Shallow:
 		return lcopy(src, dest)
 	case Deep:
-		orig, err := os.Readlink(src)
+		orig, err := filepath.EvalSymlinks(src)
 		if err != nil {
 			return err
 		}

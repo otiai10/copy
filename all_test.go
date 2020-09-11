@@ -20,13 +20,15 @@ func TestMain(m *testing.M) {
 
 func setup(m *testing.M) {
 	os.MkdirAll("testdata.copy", os.ModePerm)
-	os.Symlink("testdata/case01", "testdata/case03/case01")
+	os.Symlink("../../testdata/case01", "testdata/case03/case01")
 	os.Chmod("testdata/case07/dir_0500", 0500)
 	os.Chmod("testdata/case07/file_0444", 0444)
+	os.Symlink("testdata/case01", "testdata/case09/case01")
 }
 
 func teardown(m *testing.M) {
 	os.RemoveAll("testdata/case03/case01")
+	os.RemoveAll("testdata/case09/case01")
 	os.RemoveAll("testdata.copy")
 }
 
@@ -219,5 +221,11 @@ func TestCopy(t *testing.T) {
 		opt := Options{Sync: true}
 		err = Copy("testdata/case08", "testdata.copy/case08", opt)
 		Expect(t, err).ToBe(nil)
+	})
+
+	When(t, "invalid symlink with Opt.OnSymlink == Deep", func(t *testing.T) {
+		opt := Options{OnSymlink: func(string) SymlinkAction { return Deep }}
+		err := Copy("testdata/case09", "testdata.copy/case09.deep", opt)
+		Expect(t, os.IsNotExist(err)).ToBe(true)
 	})
 }
