@@ -27,7 +27,7 @@ func setup(m *testing.M) error {
 		return err
 	}
 
-	if err := os.Symlink("testdata/case01", "testdata/case03/case01"); err != nil {
+	if err := os.Symlink("../../testdata/case01", "testdata/case03/case01"); err != nil {
 		return err
 	}
 
@@ -38,12 +38,17 @@ func setup(m *testing.M) error {
 	if err := os.Chmod("testdata/case07/file_0444", 0444); err != nil {
 		return err
 	}
+  
+  if err := os.Symlink("testdata/case01", "testdata/case09/case01"); err != nil {
+    return err
+  }
 
 	return nil
 }
 
 func teardown(m *testing.M) {
 	os.RemoveAll("testdata/case03/case01")
+	os.RemoveAll("testdata/case09/case01")
 	os.RemoveAll("testdata.copy")
 }
 
@@ -236,5 +241,11 @@ func TestCopy(t *testing.T) {
 		opt := Options{Sync: true}
 		err = Copy("testdata/case08", "testdata.copy/case08", opt)
 		Expect(t, err).ToBe(nil)
+	})
+
+	When(t, "invalid symlink with Opt.OnSymlink == Deep", func(t *testing.T) {
+		opt := Options{OnSymlink: func(string) SymlinkAction { return Deep }}
+		err := Copy("testdata/case09", "testdata.copy/case09.deep", opt)
+		Expect(t, os.IsNotExist(err)).ToBe(true)
 	})
 }
