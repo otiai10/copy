@@ -38,10 +38,10 @@ func setup(m *testing.M) error {
 	if err := os.Chmod("testdata/case07/file_0444", 0444); err != nil {
 		return err
 	}
-  
-  if err := os.Symlink("testdata/case01", "testdata/case09/case01"); err != nil {
-    return err
-  }
+
+	if err := os.Symlink("testdata/case01", "testdata/case09/case01"); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -98,6 +98,11 @@ func TestCopy(t *testing.T) {
 		info, err := os.Lstat("testdata.copy/case03/case01")
 		Expect(t, err).ToBe(nil)
 		Expect(t, info.Mode()&os.ModeSymlink).Not().ToBe(0)
+	})
+
+	When(t, "copying symbolic link to a directory that doesn't exist yet", func(t *testing.T) {
+		err = Copy("testdata/case03/case01", "testdata.copy/case03/case01.2")
+		Expect(t, err).ToBe(nil)
 	})
 
 	When(t, "symlink with Opt.OnSymlink provided", func(t *testing.T) {
