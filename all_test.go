@@ -105,6 +105,12 @@ func TestCopy(t *testing.T) {
 		Expect(t, err).ToBe(nil)
 	})
 
+	When(t, "copying symbolic link to not permitted location", func(t *testing.T) {
+		err = Copy("testdata/case03/case01", "/case03/case01.2")
+		Expect(t, err).Not().ToBe(nil)
+		Expect(t, err).TypeOf("*os.PathError")
+	})
+
 	When(t, "symlink with Opt.OnSymlink provided", func(t *testing.T) {
 		opt := Options{OnSymlink: func(string) SymlinkAction { return Deep }}
 		err := Copy("testdata/case03", "testdata.copy/case03.deep", opt)
