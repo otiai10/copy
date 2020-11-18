@@ -1,4 +1,4 @@
-module github.com/otiai10/copy
+module github.com/siscia/copy
 
 go 1.12
 
