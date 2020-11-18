@@ -16,6 +16,8 @@ type Options struct {
 	// (in case crash happens, for example),
 	// at the expense of some performance penalty
 	Sync bool
+	// Preserve the atime and the mtime of the entries
+	PreserveTimes bool
 }
 
 // SymlinkAction represents what to do on symlink.
@@ -42,5 +44,6 @@ func getDefaultOptions() Options {
 		},
 		AddPermission: 0,     // Add nothing
 		Sync:          false, // Do not sync
+		PreserveTimes: false, // Do not preserve the modification time
 	}
 }

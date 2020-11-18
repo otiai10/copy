@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"syscall"
+	"time"
 )
 
 const (
@@ -47,7 +49,17 @@ func copy(src, dest string, info os.FileInfo, opt Options) error {
 	if skip {
 		return nil
 	}
-	return switchboard(src, dest, info, opt)
+
+	err = switchboard(src, dest, info, opt)
+
+	if opt.PreserveTimes {
+		mtime := info.ModTime()
+		stat := info.Sys().(*syscall.Stat_t)
+		atime := time.Unix(int64(stat.Atim.Sec), int64(stat.Atim.Nsec))
+		os.Chtimes(dest, atime, mtime)
+	}
+
+	return err
 }
 
 // fcopy is for just a file,
