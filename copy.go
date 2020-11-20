@@ -51,10 +51,17 @@ func copy(src, dest string, info os.FileInfo, opt Options) error {
 	}
 
 	err = switchboard(src, dest, info, opt)
+	if err != nil {
+		return err
+	}
 
 	if opt.PreserveTimes {
 		mtime := info.ModTime()
-		stat := info.Sys().(*syscall.Stat_t)
+		statPtr := info.Sys()
+		if statPtr == nil {
+			return err
+		}
+		stat := statPtr.(*syscall.Stat_t)
 		atime := time.Unix(int64(stat.Atim.Sec), int64(stat.Atim.Nsec))
 		os.Chtimes(dest, atime, mtime)
 	}
