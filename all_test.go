@@ -220,4 +220,11 @@ func TestCopy(t *testing.T) {
 		err = Copy("testdata/case08", "testdata.copy/case08", opt)
 		Expect(t, err).ToBe(nil)
 	})
+
+	When(t, "Multiple levels of symlinks", func(t *testing.T) {
+		opt := Options{OnSymlink: func(string) SymlinkAction { return Deep }}
+		err = Copy("testdata/case09", "testdata.copy/case09", opt)
+		Expect(t, err).ToBe(nil)
+
+	})
 }
