@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 const (
@@ -13,6 +14,12 @@ const (
 	// See https://github.com/otiai10/copy/pull/9 for more information.
 	tmpPermissionForDirectory = os.FileMode(0755)
 )
+
+type timespec struct {
+	Mtime time.Time
+	Atime time.Time
+	Ctime time.Time
+}
 
 // Copy copies src to dest, doesn't matter if src is a directory or a file.
 func Copy(src, dest string, opt ...Options) error {
@@ -25,8 +32,7 @@ func Copy(src, dest string, opt ...Options) error {
 
 // switchboard switches proper copy functions regarding file type, etc...
 // If there would be anything else here, add a case to this switchboard.
-func switchboard(src, dest string, info os.FileInfo, opt Options) error {
-	err := error(nil)
+func switchboard(src, dest string, info os.FileInfo, opt Options) (err error) {
 	switch {
 	case info.Mode()&os.ModeSymlink != 0:
 		err = onsymlink(src, dest, info, opt)
@@ -41,7 +47,10 @@ func switchboard(src, dest string, info os.FileInfo, opt Options) error {
 	}
 
 	if opt.PreserveTimes {
-		preserveTime(info, dest)
+		spec := getTimeSpec(info)
+		if err := os.Chtimes(dest, spec.Atime, spec.Mtime); err != nil {
+			return err
+		}
 	}
 
 	return err

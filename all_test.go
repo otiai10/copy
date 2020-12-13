@@ -4,12 +4,9 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
-	"syscall"
 	"testing"
-	"time"
 
 	. "github.com/otiai10/mint"
 )
@@ -226,38 +223,22 @@ func TestCopy(t *testing.T) {
 	})
 
 	When(t, "Options.PreserveTimes provided", func(t *testing.T) {
+
+		err = Copy("testdata/case09", "testdata.copy/case09")
+		Expect(t, err).ToBe(nil)
 		opt := Options{PreserveTimes: true}
-		err = Copy("testdata/case09", "testdata.copyTime/case09", opt)
+		err = Copy("testdata/case09", "testdata.copy/case09-preservetimes", opt)
 		Expect(t, err).ToBe(nil)
 
-		paths := []string{"", "README.md", "dir", "symlink"}
-
-		for _, p := range paths {
-			original := path.Join("testdata/case09", p)
-			timePreservedCopy := path.Join("testdata.copyTime/case09", p)
-
-			infoOriginal, errOriginal := os.Lstat(original)
-			infoCopy, errCopy := os.Lstat(timePreservedCopy)
-
-			statOriginal := infoOriginal.Sys().(*syscall.Stat_t)
-			Expect(t, statOriginal).Not().ToBe(nil)
-			atimeOriginal := time.Unix(int64(statOriginal.Atim.Sec), int64(statOriginal.Atim.Nsec))
-
-			statCopy := infoCopy.Sys().(*syscall.Stat_t)
-			Expect(t, statCopy).Not().ToBe(nil)
-			atimeCopy := time.Unix(int64(statCopy.Atim.Sec), int64(statCopy.Atim.Nsec))
-
-			Expect(t, errOriginal).ToBe(nil)
-			Expect(t, errCopy).ToBe(nil)
-
-			modDiff := infoOriginal.ModTime().Sub(infoCopy.ModTime())
-			Expect(t, modDiff <= 1*time.Millisecond).ToBe(true)
-			Expect(t, -modDiff <= 1*time.Millisecond).ToBe(true)
-
-			aDiff := atimeOriginal.Sub(atimeCopy)
-			Expect(t, aDiff <= 1*time.Millisecond).ToBe(true)
-			Expect(t, -aDiff <= 1*time.Millisecond).ToBe(true)
-
+		for _, entry := range []string{"", "README.md", "symlink"} {
+			orig, err := os.Stat("testdata/case09/" + entry)
+			Expect(t, err).ToBe(nil)
+			plain, err := os.Stat("testdata.copy/case09/" + entry)
+			Expect(t, err).ToBe(nil)
+			preserved, err := os.Stat("testdata.copy/case09-preservetimes/" + entry)
+			Expect(t, err).ToBe(nil)
+			Expect(t, plain.ModTime().Unix()).Not().ToBe(orig.ModTime().Unix())
+			Expect(t, preserved.ModTime().Unix()).ToBe(orig.ModTime().Unix())
 		}
 
 	})
