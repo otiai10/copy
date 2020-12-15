@@ -1,3 +1,5 @@
 testdata.copy
 coverage.txt
 vendor
+
+.idea/
