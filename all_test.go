@@ -247,3 +247,51 @@ func TestCopy(t *testing.T) {
 
 	})
 }
+
+func TestOptions_OnDirExists(t *testing.T) {
+	err := Copy("testdata/case10/dest", "testdata.copy/case10/dest.1")
+	Expect(t, err).ToBe(nil)
+	err = Copy("testdata/case10/dest", "testdata.copy/case10/dest.2")
+	Expect(t, err).ToBe(nil)
+	err = Copy("testdata/case10/dest", "testdata.copy/case10/dest.3")
+	Expect(t, err).ToBe(nil)
+
+	opt := Options{}
+
+	opt.OnDirExists = func(src, dest string) DirExistsAction {
+		return Merge
+	}
+	err = Copy("testdata/case10/src", "testdata.copy/case10/dest.1", opt)
+	Expect(t, err).ToBe(nil)
+	err = Copy("testdata/case10/src", "testdata.copy/case10/dest.1", opt)
+	Expect(t, err).ToBe(nil)
+	b, err := ioutil.ReadFile("testdata.copy/case10/dest.1/" + "foo/" + "text_aaa")
+	Expect(t, err).ToBe(nil)
+	Expect(t, string(b)).ToBe("This is text_aaa from src")
+	stat, err := os.Stat("testdata.copy/case10/dest.1/foo/text_eee")
+	Expect(t, err).ToBe(nil)
+	Expect(t, stat).Not().ToBe(nil)
+
+	opt.OnDirExists = func(src, dest string) DirExistsAction {
+		return Replace
+	}
+	err = Copy("testdata/case10/src", "testdata.copy/case10/dest.2", opt)
+	Expect(t, err).ToBe(nil)
+	err = Copy("testdata/case10/src", "testdata.copy/case10/dest.2", opt)
+	Expect(t, err).ToBe(nil)
+	b, err = ioutil.ReadFile("testdata.copy/case10/dest.2/" + "foo/" + "text_aaa")
+	Expect(t, err).ToBe(nil)
+	Expect(t, string(b)).ToBe("This is text_aaa from src")
+	stat, err = os.Stat("testdata.copy/case10/dest.2/foo/text_eee")
+	Expect(t, os.IsNotExist(err)).ToBe(true)
+	Expect(t, stat).ToBe(nil)
+
+	opt.OnDirExists = func(src, dest string) DirExistsAction {
+		return Untouchable
+	}
+	err = Copy("testdata/case10/src", "testdata.copy/case10/dest.3", opt)
+	Expect(t, err).ToBe(nil)
+	b, err = ioutil.ReadFile("testdata.copy/case10/dest.3/" + "foo/" + "text_aaa")
+	Expect(t, err).ToBe(nil)
+	Expect(t, string(b)).ToBe("This is text_aaa from dest")
+}

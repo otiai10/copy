@@ -6,6 +6,8 @@ import "os"
 type Options struct {
 	// OnSymlink can specify what to do on symlink
 	OnSymlink func(src string) SymlinkAction
+	// OnDirExists can specify what to do when there is a directory already exists in destination.
+	OnDirExists func(src, dest string) DirExistsAction
 	// Skip can specify which files should be skipped
 	Skip func(src string) (bool, error)
 	// AddPermission to every entities,
@@ -19,6 +21,11 @@ type Options struct {
 	// Preserve the atime and the mtime of the entries
 	// On linux we can preserve only up to 1 millisecond accuracy
 	PreserveTimes bool
+
+	intent struct {
+		src  string
+		dest string
+	}
 }
 
 // SymlinkAction represents what to do on symlink.
@@ -33,18 +40,35 @@ const (
 	Skip
 )
 
+// DirExistsAction represents what to do on dest dir.
+type DirExistsAction int
+
+const (
+	// Merge preserves or overwrites existing files under the dir (default behavior).
+	Merge DirExistsAction = iota
+	// Replace deletes all contents under the dir and copy src files.
+	Replace
+	// Untouchable does nothing for the dir, and leaves it as it is.
+	Untouchable
+)
+
 // getDefaultOptions provides default options,
 // which would be modified by usage-side.
-func getDefaultOptions() Options {
+func getDefaultOptions(src, dest string) Options {
 	return Options{
 		OnSymlink: func(string) SymlinkAction {
 			return Shallow // Do shallow copy
 		},
+		OnDirExists: nil, // Default behavior is "Merge".
 		Skip: func(string) (bool, error) {
 			return false, nil // Don't skip
 		},
 		AddPermission: 0,     // Add nothing
 		Sync:          false, // Do not sync
 		PreserveTimes: false, // Do not preserve the modification time
+		intent: struct {
+			src  string
+			dest string
+		}{src, dest},
 	}
 }

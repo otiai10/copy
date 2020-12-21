@@ -27,7 +27,7 @@ func Copy(src, dest string, opt ...Options) error {
 	if err != nil {
 		return err
 	}
-	return switchboard(src, dest, info, assure(opt...))
+	return switchboard(src, dest, info, assure(src, dest, opt...))
 }
 
 // switchboard switches proper copy functions regarding file type, etc...
@@ -112,6 +112,17 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 // and pass everything to "copy" recursively.
 func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 
+	if opt.OnDirExists != nil && destdir != opt.intent.dest {
+		switch opt.OnDirExists(srcdir, destdir) {
+		case Replace:
+			if err := os.RemoveAll(destdir); err != nil {
+				return err
+			}
+		case Untouchable:
+			return nil
+		}
+	}
+
 	originalMode := info.Mode()
 
 	// Make dest dir with 0755 so that everything writable.
@@ -189,16 +200,18 @@ func chmod(dir string, mode os.FileMode, reported *error) {
 
 // assure Options struct, should be called only once.
 // All optional values MUST NOT BE nil/zero after assured.
-func assure(opts ...Options) Options {
+func assure(src, dest string, opts ...Options) Options {
+	defopt := getDefaultOptions(src, dest)
 	if len(opts) == 0 {
-		return getDefaultOptions()
+		return defopt
 	}
-	defopt := getDefaultOptions()
 	if opts[0].OnSymlink == nil {
 		opts[0].OnSymlink = defopt.OnSymlink
 	}
 	if opts[0].Skip == nil {
 		opts[0].Skip = defopt.Skip
 	}
+	opts[0].intent.src = defopt.intent.src
+	opts[0].intent.dest = defopt.intent.dest
 	return opts[0]
 }
