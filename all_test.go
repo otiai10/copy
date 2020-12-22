@@ -22,7 +22,7 @@ func TestMain(m *testing.M) {
 func setup(m *testing.M) {
 	os.MkdirAll("testdata.copy", os.ModePerm)
 	os.Symlink("testdata/case01", "testdata/case03/case01")
-	os.Chmod("testdata/case07/dir_0500", 0500)
+	os.Chmod("testdata/case07/dir_0555", 0555)
 	os.Chmod("testdata/case07/file_0444", 0444)
 }
 
@@ -198,25 +198,25 @@ func TestOptions_Skip(t *testing.T) {
 }
 
 func TestOptions_AddPermission(t *testing.T) {
-	info, err := os.Stat("testdata/case07/dir_0500")
+	info, err := os.Stat("testdata/case07/dir_0555")
 	Expect(t, err).ToBe(nil)
-	Expect(t, info.Mode()).ToBe(os.FileMode(0500) | os.ModeDir)
+	Expect(t, info.Mode()).ToBe(os.FileMode(0555) | os.ModeDir)
 
 	info, err = os.Stat("testdata/case07/file_0444")
 	Expect(t, err).ToBe(nil)
 	Expect(t, info.Mode()).ToBe(os.FileMode(0444))
 
-	opt := Options{AddPermission: 0200}
+	opt := Options{AddPermission: 0222}
 	err = Copy("testdata/case07", "testdata.copy/case07", opt)
 	Expect(t, err).ToBe(nil)
 
-	info, err = os.Stat("testdata.copy/case07/dir_0500")
+	info, err = os.Stat("testdata.copy/case07/dir_0555")
 	Expect(t, err).ToBe(nil)
-	Expect(t, info.Mode()).ToBe(os.FileMode(0500|0200) | os.ModeDir)
+	Expect(t, info.Mode()).ToBe(os.FileMode(0555|0222) | os.ModeDir)
 
 	info, err = os.Stat("testdata.copy/case07/file_0444")
 	Expect(t, err).ToBe(nil)
-	Expect(t, info.Mode()).ToBe(os.FileMode(0444 | 0200))
+	Expect(t, info.Mode()).ToBe(os.FileMode(0444 | 0222))
 }
 
 func TestOptions_Sync(t *testing.T) {
