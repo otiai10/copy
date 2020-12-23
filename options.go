@@ -12,7 +12,7 @@ type Options struct {
 	OnDirExists func(src, dest string) DirExistsAction
 
 	// Skip can specify which files should be skipped
-	Skip func(src string) (bool, error)
+	Skip func(src string, info os.FileInfo) (bool, error)
 
 	// AddPermission to every entities,
 	// NO MORE THAN 0777
@@ -66,7 +66,7 @@ func getDefaultOptions(src, dest string) Options {
 			return Shallow // Do shallow copy
 		},
 		OnDirExists: nil, // Default behavior is "Merge".
-		Skip: func(string) (bool, error) {
+		Skip: func(string, os.FileInfo) (bool, error) {
 			return false, nil // Don't skip
 		},
 		AddPermission: 0,     // Add nothing

@@ -152,7 +152,7 @@ func TestOptions_OnSymlink(t *testing.T) {
 }
 
 func TestOptions_Skip(t *testing.T) {
-	opt := Options{Skip: func(src string) (bool, error) {
+	opt := Options{Skip: func(src string, info os.FileInfo) (bool, error) {
 		switch {
 		case strings.HasSuffix(src, "_skip"):
 			return true, nil
@@ -186,7 +186,7 @@ func TestOptions_Skip(t *testing.T) {
 
 	Because(t, "if Skip func returns error, Copy should be interrupted", func(t *testing.T) {
 		errInsideSkipFunc := errors.New("Something wrong inside Skip")
-		opt := Options{Skip: func(src string) (bool, error) {
+		opt := Options{Skip: func(src string, info os.FileInfo) (bool, error) {
 			return false, errInsideSkipFunc
 		}}
 		err := Copy("testdata/case06", "testdata.copy/case06.01", opt)
