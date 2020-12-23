@@ -76,6 +76,10 @@ func copy(src, dest string, info os.FileInfo, opt Options) error {
 // and file permission.
 func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 
+	if !info.Mode().IsRegular() {
+		return
+	}
+
 	if err = os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
 		return
 	}
