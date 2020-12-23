@@ -1,4 +1,4 @@
-module github.com/otiai10/copy
+module github.com/CalebQ42/copy
 
 go 1.14
 
