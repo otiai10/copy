@@ -1,4 +1,4 @@
-// +build amd64,darwin
+// +build darwin
 
 package copy
 
