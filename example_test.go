@@ -8,9 +8,9 @@ import (
 
 func ExampleCopy() {
 
-	err := Copy("testdata/example", "testdata.copy/example")
+	err := Copy("test/data/example", "test/data.copy/example")
 	fmt.Println("Error:", err)
-	info, _ := os.Stat("testdata.copy/example")
+	info, _ := os.Stat("test/data.copy/example")
 	fmt.Println("IsDir:", info.IsDir())
 
 	// Output:
@@ -21,8 +21,8 @@ func ExampleCopy() {
 func ExampleOptions() {
 
 	err := Copy(
-		"testdata/example",
-		"testdata.copy/example_with_options",
+		"test/data/example",
+		"test/data.copy/example_with_options",
 		Options{
 			Skip: func(src string) (bool, error) {
 				return strings.HasSuffix(src, ".git-like"), nil
@@ -34,7 +34,7 @@ func ExampleOptions() {
 		},
 	)
 	fmt.Println("Error:", err)
-	_, err = os.Stat("testdata.copy/example_with_options/.git-like")
+	_, err = os.Stat("test/data.copy/example_with_options/.git-like")
 	fmt.Println("Skipped:", os.IsNotExist(err))
 
 	// Output:

@@ -1,0 +1,170 @@
+#!/bin/bash
+
+set -e
+set -o pipefail
+
+APPNAME=copy
+PROJDIR=$(dirname "$(cd "$(dirname "${0}")"; pwd -P)")
+
+# {{{ Help message
+function help() {
+  cat >&2 << EOF
+This script is a driver for "runtime tests".
+The "runtime test" is to test this package in specific environments,
+defined by Dockerfiles or Vagrantfiles.
+
+Options:
+  --driver|-d {name}  Specify VM driver software, either of [docker, vagrant].
+  --build|-b          Build testable images if provided, otherwise pull images.
+  --no-cache|-c       Build testable images without layer cache (only available with -b)
+  --push|-p           Push local images to dockerhub (for development purpose).
+  --quiet|-q          Don't show verbose logs of setting VMs up.
+  --run|-R {case}     Run only cases which have specified pattern in the case names.
+  --exclude|-X {case} Run only cases which DON'T have specified pattern in the case names.
+  --rm                Remove VMs which are created by this runtime test.
+  --help|-h           Show this message ;)
+
+Examples:
+
+  ./test/run --driver docker --build --run CentOS --rm
+
+EOF
+}
+# }}}
+
+# {{{ Parse CLI options
+function parse_options() {
+  DRIVER=
+  REMOVE=
+  BUILD=
+  NO_CACHE=
+  PUSH=
+  QUIET=
+  MATCH=
+  EXCLUDE=
+  while [[ $# -gt 0 ]]; do
+  case "${1}" in
+      --driver|-d)
+      DRIVER="${2}"
+      shift && shift
+      ;;
+      --rm)
+      REMOVE=YES
+      shift
+      ;;
+      --build|-b)
+      BUILD=YES
+      shift
+      ;;
+      --no-cache|-c)
+      NO_CACHE="--no-cache"
+      shift
+      ;;
+      --push|-p)
+      PUSH=YES
+      shift
+      ;;
+      --quiet|-q)
+      QUIET="--quiet"
+      shift
+      ;;
+      --run|-R)
+      MATCH="${2}"
+      shift && shift
+      ;;
+      --exclude|-X)
+      EXCLUDE="${2}"
+      shift && shift
+      ;;
+      --help|-h)
+      help && exit 0
+      ;;
+      *)
+      printf "Unkown flag: ${1}\n\n"
+      help
+      exit 1
+      ;;
+  esac
+  done
+}
+# }}}
+
+# {{{ Runner function for "--driver docker"
+function test_docker_runtimes() {
+  for runtime in `ls ${PROJDIR}/test/images/*.Dockerfile`; do
+    testcase=`basename ${runtime} | sed -e s/\.Dockerfile$//`
+    if [ -n "${MATCH}" ]; then
+      if [[ "${testcase}" != *${MATCH}* ]]; then
+        continue
+      fi
+    fi
+    if [ -n "${EXCLUDE}" ]; then
+      if [[ "${testcase}" == *${EXCLUDE}* ]]; then
+        continue
+      fi
+    fi
+    echo "┌───────────── ${testcase}"
+    if [ -n "${BUILD}" ]; then
+      echo "│ [Docker] Building image..."
+      docker build . ${NO_CACHE} -f ${runtime} -t ${APPNAME}/test:${testcase} ${QUIET} | sed "s/^/│ /"
+    else
+      echo "│ [Docker] Pulling image..."
+      docker pull ${APPNAME}/test:${testcase} | sed "s/^/│ /"
+    fi
+    echo "│ [Docker] Running tests..."
+    docker run -i -t -e "TESTCASE=${testcase}" --rm ${APPNAME}/test:${testcase} | sed "s/^/│ [${testcase}] /"
+    if [ -n "${PUSH}" ]; then
+      echo "│ [Docker] Pushing the image..."
+      docker push ${APPNAME}/test:${testcase} | sed "s/^/│ /"
+    fi
+    if [ -n "${REMOVE}" ]; then
+      echo "│ [Docker] Removing image..."
+      docker rmi ${APPNAME}/test:${testcase} 1>/dev/null
+    fi
+    echo "└───────────── ${testcase} [OK]"
+  done
+}
+# }}}
+
+# {{{ Runner function for "--driver vagrant"
+function test_vagrant_runtimes() {
+  for runtime in `ls ${PROJDIR}/test/images/*.Vagrantfile`; do
+    testcase=`basename ${runtime} | sed -e s/\.Vagrantfile$//`
+    if [ -n "${MATCH}" ]; then
+      if [[ "${testcase}" != *${MATCH}* ]]; then continue; fi
+    fi
+    echo "┌───────────── ${testcase}"
+    echo "│ [Vagrant] Making VM up..."
+    vboxname=${APPNAME}-test-${testcase}
+    VAGRANT_VAGRANTFILE=${runtime} VIRTUALBOX_NAME=${vboxname} vagrant up --provider virtualbox | sed "s/^/│ /"
+    VAGRANT_VAGRANTFILE=${runtime} VIRTUALBOX_NAME=${vboxname} vagrant provision | sed "s/^/│ /"
+    VAGRANT_VAGRANTFILE=${runtime} vagrant halt | sed "s/^/│ /"
+    if [ -n "${REMOVE}" ]; then
+      echo "│ [Vagrant] Removing VM..."
+      VAGRANT_VAGRANTFILE=${runtime} vagrant destroy -f | sed "s/^/│ /"
+    fi
+    echo "└───────────── ${testcase} [OK]"
+  done
+}
+# }}}
+
+# {{{ Main procedure
+function __main__() {
+  parse_options $@
+  case ${DRIVER} in
+    docker)
+    test_docker_runtimes
+    ;;
+    vagrant)
+    test_vagrant_runtimes
+    ;;
+    *)
+    test_docker_runtimes
+    test_vagrant_runtimes
+    ;;
+  esac
+}
+# }}}
+
+# Entrypoint
+__main__ $@

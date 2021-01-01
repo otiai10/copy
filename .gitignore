@@ -1,3 +1,4 @@
-testdata.copy
+test/data.copy
 coverage.txt
 vendor
+.vagrant
