@@ -3,7 +3,7 @@
 set -e
 set -o pipefail
 
-APPNAME=copy.go
+APPNAME=copy
 PROJDIR=$(dirname "$(cd "$(dirname "${0}")"; pwd -P)")
 
 # {{{ Help message
@@ -26,7 +26,7 @@ Options:
 
 Examples:
 
-  ./test/run -d docker -v --run CentOS --rm
+  ./test/run --driver docker --build --run CentOS --rm
 
 EOF
 }
