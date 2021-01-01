@@ -43,3 +43,17 @@ jobs:
       with:
         file: ./coverage
         verbose: true
+
+  runtime-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        runtime:
+          - alpine
+          - archlinux
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: ${{ matrix.runtime }}
+        shell: 'script -q -e -c "bash {0}"'
+        run: bash ./test/run --driver docker --build --run ${{ matrix.runtime }}
