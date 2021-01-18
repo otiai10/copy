@@ -57,7 +57,7 @@ func TestCopy(t *testing.T) {
 		}
 		err := Copy("test/data/case00", filepath.Join("test/data/case00", dest))
 		Expect(t, err).Not().ToBe(nil)
-		Expect(t, err).TypeOf("*os.PathError")
+		Expect(t, err).TypeOf("*fs.PathError")
 	})
 
 	When(t, "try to create not permitted location", func(t *testing.T) {
@@ -66,13 +66,13 @@ func TestCopy(t *testing.T) {
 		}
 		err := Copy("test/data/case00", "/case00")
 		Expect(t, err).Not().ToBe(nil)
-		Expect(t, err).TypeOf("*os.PathError")
+		Expect(t, err).TypeOf("*fs.PathError")
 	})
 
 	When(t, "try to create a directory on existing file name", func(t *testing.T) {
 		err := Copy("test/data/case02", "test/data.copy/case00/README.md")
 		Expect(t, err).Not().ToBe(nil)
-		Expect(t, err).TypeOf("*os.PathError")
+		Expect(t, err).TypeOf("*fs.PathError")
 	})
 
 	When(t, "source directory includes symbolic link", func(t *testing.T) {
