@@ -38,6 +38,8 @@ func switchboard(src, dest string, info os.FileInfo, opt Options) (err error) {
 		err = onsymlink(src, dest, info, opt)
 	case info.IsDir():
 		err = dcopy(src, dest, info, opt)
+	case info.Mode()&os.ModeNamedPipe != 0:
+		err = pcopy(dest,info)
 	default:
 		err = fcopy(src, dest, info, opt)
 	}
