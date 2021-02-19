@@ -7,6 +7,6 @@ import (
 )
 
 // pcopy is for just named pipes. Windows doesn't support them
-func pcopy(dest string, info os.FileInfo) (err error) {
-	return
+func pcopy(dest string, info os.FileInfo) error {
+	return nil
 }

@@ -13,5 +13,3 @@ func setup(m *testing.M) {
 	os.Chmod("test/data/case07/dir_0555", 0555)
 	os.Chmod("test/data/case07/file_0444", 0444)
 }
-
-func testPipes(t *testing.T) { }
