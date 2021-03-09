@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"syscall"
 	"time"
 )
 
@@ -39,7 +40,7 @@ func switchboard(src, dest string, info os.FileInfo, opt Options) (err error) {
 	case info.IsDir():
 		err = dcopy(src, dest, info, opt)
 	case info.Mode()&os.ModeNamedPipe != 0:
-		err = pcopy(dest,info)
+		err = pcopy(dest, info)
 	default:
 		err = fcopy(src, dest, info, opt)
 	}
@@ -106,6 +107,18 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 		err = f.Sync()
 	}
 
+	if opt.PreserveOwner {
+		f, err := os.Stat(src)
+		if err != nil {
+			return err
+		}
+		if stat, ok := f.Sys().(*syscall.Stat_t); ok {
+			if err := os.Chown(dest, int(stat.Uid), int(stat.Gid)); err != nil {
+				return err
+			}
+		}
+	}
+
 	return
 }
 
@@ -133,6 +146,15 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 	}
 	// Recover dir mode with original one.
 	defer chmod(destdir, originalMode|opt.AddPermission, &err)
+	defer func() {
+		if opt.PreserveOwner {
+			if stat, ok := info.Sys().(*syscall.Stat_t); ok {
+				if errc := os.Chown(destdir, int(stat.Uid), int(stat.Gid)); errc != nil {
+					err = errc
+				}
+			}
+		}
+	}()
 
 	contents, err := ioutil.ReadDir(srcdir)
 	if err != nil {

@@ -28,6 +28,9 @@ type Options struct {
 	// On linux we can preserve only up to 1 millisecond accuracy
 	PreserveTimes bool
 
+	// Preserve the uid and the gid of
+	PreserveOwner bool
+
 	intent struct {
 		src  string
 		dest string
