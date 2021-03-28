@@ -288,4 +288,13 @@ func TestOptions_OnDirExists(t *testing.T) {
 	b, err = ioutil.ReadFile("test/data.copy/case10/dest.3/" + "foo/" + "text_aaa")
 	Expect(t, err).ToBe(nil)
 	Expect(t, string(b)).ToBe("This is text_aaa from dest")
+
+	When(t, "PreserveTimes is true with Untouchable", func(t *testing.T) {
+		opt := Options{
+			OnDirExists:   func(src, dest string) DirExistsAction { return Untouchable },
+			PreserveTimes: true,
+		}
+		err = Copy("test/data/case10/src", "test/data.copy/case10/dest.3", opt)
+		Expect(t, err).ToBe(nil)
+	})
 }

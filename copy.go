@@ -39,20 +39,9 @@ func switchboard(src, dest string, info os.FileInfo, opt Options) (err error) {
 	case info.IsDir():
 		err = dcopy(src, dest, info, opt)
 	case info.Mode()&os.ModeNamedPipe != 0:
-		err = pcopy(dest,info)
+		err = pcopy(dest, info)
 	default:
 		err = fcopy(src, dest, info, opt)
-	}
-
-	if err != nil {
-		return err
-	}
-
-	if opt.PreserveTimes {
-		spec := getTimeSpec(info)
-		if err := os.Chtimes(dest, spec.Atime, spec.Mtime); err != nil {
-			return err
-		}
 	}
 
 	return err
@@ -106,6 +95,10 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 		err = f.Sync()
 	}
 
+	if opt.PreserveTimes {
+		return preserveTimes(info, dest)
+	}
+
 	return
 }
 
@@ -114,7 +107,8 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 // and pass everything to "copy" recursively.
 func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 
-	if opt.OnDirExists != nil && destdir != opt.intent.dest {
+	_, err = os.Stat(destdir)
+	if err == nil && opt.OnDirExists != nil && destdir != opt.intent.dest {
 		switch opt.OnDirExists(srcdir, destdir) {
 		case Replace:
 			if err := os.RemoveAll(destdir); err != nil {
@@ -122,7 +116,9 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 			}
 		case Untouchable:
 			return nil
-		}
+		} // case "Merge" is default behaviour. Go through.
+	} else if err != nil && !os.IsNotExist(err) {
+		return err // Unwelcome error type...!
 	}
 
 	originalMode := info.Mode()
@@ -146,6 +142,10 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 			// If any error, exit immediately
 			return
 		}
+	}
+
+	if opt.PreserveTimes {
+		return preserveTimes(info, destdir)
 	}
 
 	return
