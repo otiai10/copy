@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
@@ -19,7 +20,8 @@ func TestMain(m *testing.M) {
 }
 
 func teardown(m *testing.M) {
-	os.RemoveAll("test/data/case03/case01")
+	os.RemoveAll("test/data/case03/relative")
+	os.RemoveAll("test/data/case03/absolute")
 	os.RemoveAll("test/data.copy")
 	os.RemoveAll("test/data.copyTime")
 }
@@ -45,7 +47,7 @@ func TestCopy(t *testing.T) {
 	When(t, "source directory includes symbolic link", func(t *testing.T) {
 		err := Copy("test/data/case03", "test/data.copy/case03")
 		Expect(t, err).ToBe(nil)
-		info, err := os.Lstat("test/data.copy/case03/case01")
+		info, err := os.Lstat("test/data.copy/case03/relative")
 		Expect(t, err).ToBe(nil)
 		Expect(t, info.Mode()&os.ModeSymlink).Not().ToBe(0)
 	})
@@ -113,19 +115,46 @@ func TestCopy_NamedPipe(t *testing.T) {
 }
 
 func TestOptions_OnSymlink(t *testing.T) {
+	originalCase01, err := os.Stat("test/data/case01")
+	Expect(t, err).ToBe(nil)
+	copyCase01, err := os.Stat("test/data.copy/case01")
+	Expect(t, err).ToBe(nil)
 	opt := Options{OnSymlink: func(string) SymlinkAction { return Deep }}
-	err := Copy("test/data/case03", "test/data.copy/case03.deep", opt)
+	err = Copy("test/data/case03", "test/data.copy/case03.deep/arbitrarily/deep", opt)
 	Expect(t, err).ToBe(nil)
-	info, err := os.Lstat("test/data.copy/case03.deep/case01")
+	info, err := os.Lstat("test/data.copy/case03.deep/arbitrarily/deep/relative")
 	Expect(t, err).ToBe(nil)
-	Expect(t, info.Mode()&os.ModeSymlink).ToBe(os.FileMode(0))
+	Expect(t, info.Mode()&os.ModeSymlink != 0).ToBe(false)
+	Expect(t, os.SameFile(originalCase01, info)).ToBe(false)
+	info, err = os.Lstat("test/data.copy/case03.deep/arbitrarily/deep/absolute")
+	Expect(t, err).ToBe(nil)
+	Expect(t, info.Mode()&os.ModeSymlink != 0).ToBe(false)
+	Expect(t, os.SameFile(originalCase01, info)).ToBe(false)
+
+	opt = Options{OnSymlink: func(string) SymlinkAction { return Shallow }}
+	err = Copy("test/data/case03", "test/data.copy/case03.nested/arbitrarily/deep", opt)
+	// errors because relative symlinks are broken
+	Expect(t, errors.Is(err, os.ErrNotExist)).ToBe(true)
 
 	opt = Options{OnSymlink: func(string) SymlinkAction { return Shallow }}
 	err = Copy("test/data/case03", "test/data.copy/case03.shallow", opt)
 	Expect(t, err).ToBe(nil)
-	info, err = os.Lstat("test/data.copy/case03.shallow/case01")
+
+	// assert on the symlinks
+	info, err = os.Lstat("test/data.copy/case03.shallow/relative")
 	Expect(t, err).ToBe(nil)
-	Expect(t, info.Mode()&os.ModeSymlink).Not().ToBe(os.FileMode(0))
+	Expect(t, info.Mode()&os.ModeSymlink != 0).ToBe(true)
+	info, err = os.Lstat("test/data.copy/case03.shallow/absolute")
+	Expect(t, err).ToBe(nil)
+	Expect(t, info.Mode()&os.ModeSymlink != 0).ToBe(true)
+
+	// compare the resolved symlinks
+	info, err = os.Stat("test/data.copy/case03.shallow/relative")
+	Expect(t, err).ToBe(nil)
+	Expect(t, os.SameFile(copyCase01, info)).ToBe(true)
+	info, err = os.Stat("test/data.copy/case03.shallow/absolute")
+	Expect(t, err).ToBe(nil)
+	Expect(t, os.SameFile(originalCase01, info)).ToBe(true)
 
 	opt = Options{OnSymlink: func(string) SymlinkAction { return Skip }}
 	err = Copy("test/data/case03", "test/data.copy/case03.skip", opt)
@@ -135,16 +164,26 @@ func TestOptions_OnSymlink(t *testing.T) {
 
 	err = Copy("test/data/case03", "test/data.copy/case03.default")
 	Expect(t, err).ToBe(nil)
-	info, err = os.Lstat("test/data.copy/case03.default/case01")
+	err = Copy("test/data/case03", "test/data.copy/case03.not-specified", Options{OnSymlink: nil})
 	Expect(t, err).ToBe(nil)
-	Expect(t, info.Mode()&os.ModeSymlink).Not().ToBe(os.FileMode(0))
 
-	opt = Options{OnSymlink: nil}
-	err = Copy("test/data/case03", "test/data.copy/case03.not-specified", opt)
-	Expect(t, err).ToBe(nil)
-	info, err = os.Lstat("test/data.copy/case03.not-specified/case01")
-	Expect(t, err).ToBe(nil)
-	Expect(t, info.Mode()&os.ModeSymlink).Not().ToBe(os.FileMode(0))
+	for _, dir := range []string{"case03.default", "case03.not-specified"} {
+		info, err = os.Lstat("test/data.copy/" + dir + "/relative")
+		Expect(t, err).ToBe(nil)
+		Expect(t, info.Mode()&os.ModeSymlink == 0).ToBe(false)
+		info, err = os.Lstat("test/data.copy/" + dir + "/absolute")
+		Expect(t, err).ToBe(nil)
+		Expect(t, info.Mode()&os.ModeSymlink == 0).ToBe(false)
+
+		dest, err := os.Readlink("test/data.copy/" + dir + "/relative")
+		Expect(t, err).ToBe(nil)
+		Expect(t, dest).ToBe("../case01")
+		cwd, err := os.Getwd()
+		Expect(t, err).ToBe(nil)
+		dest, err = os.Readlink("test/data.copy/" + dir + "/absolute")
+		Expect(t, err).ToBe(nil)
+		Expect(t, dest).ToBe(filepath.Join(cwd, "test/data/case01"))
+	}
 }
 
 func TestOptions_Skip(t *testing.T) {
@@ -230,12 +269,12 @@ func TestOptions_PreserveTimes(t *testing.T) {
 	err = Copy("test/data/case09", "test/data.copy/case09-preservetimes", opt)
 	Expect(t, err).ToBe(nil)
 
-	for _, entry := range []string{"", "README.md", "symlink"} {
-		orig, err := os.Stat("test/data/case09/" + entry)
+	for _, entry := range []string{"", "README.md"} {
+		orig, err := os.Lstat("test/data/case09/" + entry)
 		Expect(t, err).ToBe(nil)
-		plain, err := os.Stat("test/data.copy/case09/" + entry)
+		plain, err := os.Lstat("test/data.copy/case09/" + entry)
 		Expect(t, err).ToBe(nil)
-		preserved, err := os.Stat("test/data.copy/case09-preservetimes/" + entry)
+		preserved, err := os.Lstat("test/data.copy/case09-preservetimes/" + entry)
 		Expect(t, err).ToBe(nil)
 		Expect(t, plain.ModTime().Unix()).Not().ToBe(orig.ModTime().Unix())
 		Expect(t, preserved.ModTime().Unix()).ToBe(orig.ModTime().Unix())

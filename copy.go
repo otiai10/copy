@@ -1,6 +1,7 @@
 package copy
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -39,7 +40,7 @@ func switchboard(src, dest string, info os.FileInfo, opt Options) (err error) {
 	case info.IsDir():
 		err = dcopy(src, dest, info, opt)
 	case info.Mode()&os.ModeNamedPipe != 0:
-		err = pcopy(dest,info)
+		err = pcopy(dest, info)
 	default:
 		err = fcopy(src, dest, info, opt)
 	}
@@ -151,16 +152,16 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 	return
 }
 
-func onsymlink(src, dest string, info os.FileInfo, opt Options) error {
+func onsymlink(src, dest string, _ os.FileInfo, opt Options) error {
 	switch opt.OnSymlink(src) {
 	case Shallow:
 		return lcopy(src, dest)
 	case Deep:
-		orig, err := os.Readlink(src)
+		orig, err := filepath.EvalSymlinks(src)
 		if err != nil {
 			return err
 		}
-		info, err = os.Lstat(orig)
+		info, err := os.Lstat(orig)
 		if err != nil {
 			return err
 		}
@@ -179,7 +180,13 @@ func lcopy(src, dest string) error {
 	if err != nil {
 		return err
 	}
-	return os.Symlink(src, dest)
+	if err := os.Symlink(src, dest); err != nil {
+		return err
+	}
+	if _, err = os.Stat(dest); err != nil {
+		return fmt.Errorf("symlink does not resolve: %w", err)
+	}
+	return nil
 }
 
 // fclose ANYHOW closes file,
