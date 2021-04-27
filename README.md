@@ -50,8 +50,8 @@ type Options struct {
 ```go
 // For example...
 opt := Options{
-	Skip: func(src string) {
-		return strings.HasSuffix(src, ".git")
+	Skip: func(src string) (bool, error) {
+		return strings.HasSuffix(src, ".git"), nil
 	},
 }
 err := Copy("your/directory", "your/directory.copy", opt)
