@@ -35,7 +35,7 @@ func Copy(src, dest string, opt ...Options) error {
 func switchboard(src, dest string, info os.FileInfo, opt Options) (err error) {
 	switch {
 	case info.Mode()&os.ModeSymlink != 0:
-		err = onsymlink(src, dest, info, opt)
+		err = onsymlink(src, dest, opt)
 	case info.IsDir():
 		err = dcopy(src, dest, info, opt)
 	case info.Mode()&os.ModeNamedPipe != 0:
@@ -151,16 +151,19 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 	return
 }
 
-func onsymlink(src, dest string, info os.FileInfo, opt Options) error {
+func onsymlink(src, dest string, opt Options) error {
 	switch opt.OnSymlink(src) {
 	case Shallow:
 		return lcopy(src, dest)
 	case Deep:
 		orig, err := os.Readlink(src)
+		if !filepath.IsAbs(orig) {
+			orig = filepath.Join(filepath.Dir(src), orig)
+		}
 		if err != nil {
 			return err
 		}
-		info, err = os.Lstat(orig)
+		info, err := os.Lstat(orig)
 		if err != nil {
 			return err
 		}
