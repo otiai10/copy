@@ -28,6 +28,11 @@ type Options struct {
 	// On linux we can preserve only up to 1 millisecond accuracy.
 	PreserveTimes bool
 
+	// The byte size of the buffer to use for copying files.
+	// If zero, the internal default buffer of 32KB is used.
+	// See https://golang.org/pkg/io/#CopyBuffer for more information.
+	CopyBufferSize uint
+
 	intent struct {
 		src  string
 		dest string
@@ -69,9 +74,10 @@ func getDefaultOptions(src, dest string) Options {
 		Skip: func(string) (bool, error) {
 			return false, nil // Don't skip
 		},
-		AddPermission: 0,     // Add nothing
-		Sync:          false, // Do not sync
-		PreserveTimes: false, // Do not preserve the modification time
+		AddPermission:  0,     // Add nothing
+		Sync:           false, // Do not sync
+		PreserveTimes:  false, // Do not preserve the modification time
+		CopyBufferSize: 0,     // Do not specify, use default bufsize (32*1024)
 		intent: struct {
 			src  string
 			dest string

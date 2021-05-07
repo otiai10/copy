@@ -47,10 +47,10 @@ func switchboard(src, dest string, info os.FileInfo, opt Options) (err error) {
 	return err
 }
 
-// copy decide if this src should be copied or not.
+// copyNextOrSkip decide if this src should be copied or not.
 // Because this "copy" could be called recursively,
 // "info" MUST be given here, NOT nil.
-func copy(src, dest string, info os.FileInfo, opt Options) error {
+func copyNextOrSkip(src, dest string, info os.FileInfo, opt Options) error {
 	skip, err := opt.Skip(src)
 	if err != nil {
 		return err
@@ -58,7 +58,6 @@ func copy(src, dest string, info os.FileInfo, opt Options) error {
 	if skip {
 		return nil
 	}
-
 	return switchboard(src, dest, info, opt)
 }
 
@@ -87,8 +86,18 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 	}
 	defer fclose(s, &err)
 
-	if _, err = io.Copy(f, s); err != nil {
-		return
+	var buf []byte = nil
+	var w io.Writer = f
+	// var r io.Reader = s
+	if opt.CopyBufferSize != 0 {
+		buf = make([]byte, opt.CopyBufferSize)
+		// Disable using `ReadFrom` by io.CopyBuffer.
+		// See https://github.com/otiai10/copy/pull/60#discussion_r627320811 for more details.
+		w = struct{ io.Writer }{f}
+		// r = struct{ io.Reader }{s}
+	}
+	if _, err = io.CopyBuffer(w, s, buf); err != nil {
+		return err
 	}
 
 	if opt.Sync {
@@ -138,7 +147,7 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 	for _, content := range contents {
 		cs, cd := filepath.Join(srcdir, content.Name()), filepath.Join(destdir, content.Name())
 
-		if err = copy(cs, cd, content, opt); err != nil {
+		if err = copyNextOrSkip(cs, cd, content, opt); err != nil {
 			// If any error, exit immediately
 			return
 		}
@@ -164,7 +173,7 @@ func onsymlink(src, dest string, info os.FileInfo, opt Options) error {
 		if err != nil {
 			return err
 		}
-		return copy(orig, dest, info, opt)
+		return copyNextOrSkip(orig, dest, info, opt)
 	case Skip:
 		fallthrough
 	default:
