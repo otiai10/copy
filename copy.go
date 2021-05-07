@@ -47,10 +47,10 @@ func switchboard(src, dest string, info os.FileInfo, opt Options) (err error) {
 	return err
 }
 
-// copy decide if this src should be copied or not.
+// copyNextOrSkip decide if this src should be copied or not.
 // Because this "copy" could be called recursively,
 // "info" MUST be given here, NOT nil.
-func copy(src, dest string, info os.FileInfo, opt Options) error {
+func copyNextOrSkip(src, dest string, info os.FileInfo, opt Options) error {
 	skip, err := opt.Skip(src)
 	if err != nil {
 		return err
@@ -58,7 +58,6 @@ func copy(src, dest string, info os.FileInfo, opt Options) error {
 	if skip {
 		return nil
 	}
-
 	return switchboard(src, dest, info, opt)
 }
 
@@ -148,7 +147,7 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 	for _, content := range contents {
 		cs, cd := filepath.Join(srcdir, content.Name()), filepath.Join(destdir, content.Name())
 
-		if err = copy(cs, cd, content, opt); err != nil {
+		if err = copyNextOrSkip(cs, cd, content, opt); err != nil {
 			// If any error, exit immediately
 			return
 		}
@@ -174,7 +173,7 @@ func onsymlink(src, dest string, info os.FileInfo, opt Options) error {
 		if err != nil {
 			return err
 		}
-		return copy(orig, dest, info, opt)
+		return copyNextOrSkip(orig, dest, info, opt)
 	case Skip:
 		fallthrough
 	default:
