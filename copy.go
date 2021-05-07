@@ -13,18 +13,12 @@ const (
 	// so that stuff can be copied recursively even if any original directory is NOT writable.
 	// See https://github.com/otiai10/copy/pull/9 for more information.
 	tmpPermissionForDirectory = os.FileMode(0755)
-
-	defaultCopyBufferSize = 32 * 1024
 )
 
 type timespec struct {
 	Mtime time.Time
 	Atime time.Time
 	Ctime time.Time
-}
-
-type onlyWriter struct {
-	io.Writer
 }
 
 // Copy copies src to dest, doesn't matter if src is a directory or a file.
@@ -93,10 +87,18 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 	}
 	defer fclose(s, &err)
 
-	buf := make([]byte, opt.CopyBufferSize)
-	_, err = io.CopyBuffer(onlyWriter{f}, s, buf)
-	if err != nil {
-		return
+	var buf []byte = nil
+	var w io.Writer = f
+	// var r io.Reader = s
+	if opt.CopyBufferSize != 0 {
+		buf = make([]byte, opt.CopyBufferSize)
+		// Disable using `ReadFrom` by io.CopyBuffer.
+		// See https://github.com/otiai10/copy/pull/60#discussion_r627320811 for more details.
+		w = struct{ io.Writer }{f}
+		// r = struct{ io.Reader }{s}
+	}
+	if _, err = io.CopyBuffer(w, s, buf); err != nil {
+		return err
 	}
 
 	if opt.Sync {
@@ -220,9 +222,6 @@ func assure(src, dest string, opts ...Options) Options {
 	}
 	if opts[0].Skip == nil {
 		opts[0].Skip = defopt.Skip
-	}
-	if opts[0].CopyBufferSize <= 0 {
-		opts[0].CopyBufferSize = defaultCopyBufferSize
 	}
 	opts[0].intent.src = defopt.intent.src
 	opts[0].intent.dest = defopt.intent.dest
