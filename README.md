@@ -4,7 +4,6 @@
 [![Actions Status](https://github.com/otiai10/copy/workflows/Go/badge.svg)](https://github.com/otiai10/copy/actions)
 [![codecov](https://codecov.io/gh/otiai10/copy/branch/main/graph/badge.svg)](https://codecov.io/gh/otiai10/copy)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/otiai10/copy/blob/main/LICENSE)
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fotiai10%2Fcopy.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fotiai10%2Fcopy?ref=badge_shield)
 [![Go Report Card](https://goreportcard.com/badge/github.com/otiai10/copy)](https://goreportcard.com/report/github.com/otiai10/copy)
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/otiai10/copy?sort=semver)](https://pkg.go.dev/github.com/otiai10/copy)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fotiai10%2Fcopy.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fotiai10%2Fcopy?ref=badge_shield)
