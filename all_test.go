@@ -299,6 +299,13 @@ func TestOptions_OnDirExists(t *testing.T) {
 		err = Copy("test/data/case10/src", "test/data.copy/case10/dest.3", opt)
 		Expect(t, err).ToBe(nil)
 	})
+
+	When(t, "Multiple levels of symlinks", func(t *testing.T) {
+		opt := Options{OnSymlink: func(string) SymlinkAction { return Deep }}
+		err = Copy("testdata/case09", "testdata.copy/case09", opt)
+		Expect(t, err).ToBe(nil)
+
+	})
 }
 
 func TestOptions_CopyBufferSize(t *testing.T) {
