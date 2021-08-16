@@ -1,7 +1,9 @@
 FROM archlinux:base-20201220.0.11678
 
 RUN pacman -Sy -q --noconfirm \
+  glibc \
   git \
+  gcc \
   go
 
 ENV GOPATH=${HOME}/go
