@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"syscall"
 	"time"
 )
 
@@ -106,18 +105,14 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 	}
 
 	if opt.PreserveOwner {
-		f, err := os.Stat(src)
-		if err != nil {
+		if err := preserveOwner(src, dest, info); err != nil {
 			return err
-		}
-		if stat, ok := f.Sys().(*syscall.Stat_t); ok {
-			if err := os.Chown(dest, int(stat.Uid), int(stat.Gid)); err != nil {
-				return err
-			}
 		}
 	}
 	if opt.PreserveTimes {
-		return preserveTimes(info, dest)
+		if err := preserveTimes(info, dest); err != nil {
+			return err
+		}
 	}
 
 	return
@@ -150,15 +145,6 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 	}
 	// Recover dir mode with original one.
 	defer chmod(destdir, originalMode|opt.AddPermission, &err)
-	defer func() {
-		if opt.PreserveOwner {
-			if stat, ok := info.Sys().(*syscall.Stat_t); ok {
-				if errc := os.Chown(destdir, int(stat.Uid), int(stat.Gid)); errc != nil {
-					err = errc
-				}
-			}
-		}
-	}()
 
 	contents, err := ioutil.ReadDir(srcdir)
 	if err != nil {
@@ -175,7 +161,15 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 	}
 
 	if opt.PreserveTimes {
-		return preserveTimes(info, destdir)
+		if err := preserveTimes(info, destdir); err != nil {
+			return err
+		}
+	}
+
+	if opt.PreserveOwner {
+		if err := preserveOwner(srcdir, destdir, info); err != nil {
+			return err
+		}
 	}
 
 	return
