@@ -28,7 +28,7 @@ type Options struct {
 	// On linux we can preserve only up to 1 millisecond accuracy.
 	PreserveTimes bool
 
-	// Preserve the uid and the gid of
+	// Preserve the uid and the gid of all entries.
 	PreserveOwner bool
 
 	// The byte size of the buffer to use for copying files.
