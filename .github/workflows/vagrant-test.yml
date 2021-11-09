@@ -1,0 +1,20 @@
+name: Vagrant Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  vagrant-test:
+    runs-on: macos-10.15
+    strategy:
+      matrix:
+        runtime:
+          - freebsd
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: ${{ matrix.runtime }}
+        run: bash ./test/run --build --run ${{ matrix.runtime }}
