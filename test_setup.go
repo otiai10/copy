@@ -1,4 +1,4 @@
-// +build !windows
+// +build !windows,!plan9,!netbsd,!aix,!illumos,!solaris
 
 package copy
 

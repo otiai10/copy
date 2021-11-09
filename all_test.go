@@ -25,7 +25,6 @@ func teardown(m *testing.M) {
 }
 
 func TestCopy(t *testing.T) {
-
 	err := Copy("./test/data/case00", "./test/data.copy/case00")
 	Expect(t, err).ToBe(nil)
 	info, err := os.Stat("./test/data.copy/case00/README.md")
@@ -40,6 +39,9 @@ func TestCopy(t *testing.T) {
 	When(t, "specified src is just a file", func(t *testing.T) {
 		err := Copy("test/data/case01/README.md", "test/data.copy/case01/README.md")
 		Expect(t, err).ToBe(nil)
+		content, err := ioutil.ReadFile("test/data.copy/case01/README.md")
+		Expect(t, err).ToBe(nil)
+		Expect(t, string(content)).ToBe("case01 - README.md")
 	})
 
 	When(t, "source directory includes symbolic link", func(t *testing.T) {
@@ -288,4 +290,26 @@ func TestOptions_OnDirExists(t *testing.T) {
 	b, err = ioutil.ReadFile("test/data.copy/case10/dest.3/" + "foo/" + "text_aaa")
 	Expect(t, err).ToBe(nil)
 	Expect(t, string(b)).ToBe("This is text_aaa from dest")
+
+	When(t, "PreserveTimes is true with Untouchable", func(t *testing.T) {
+		opt := Options{
+			OnDirExists:   func(src, dest string) DirExistsAction { return Untouchable },
+			PreserveTimes: true,
+		}
+		err = Copy("test/data/case10/src", "test/data.copy/case10/dest.3", opt)
+		Expect(t, err).ToBe(nil)
+	})
+}
+
+func TestOptions_CopyBufferSize(t *testing.T) {
+	opt := Options{
+		CopyBufferSize: 512,
+	}
+
+	err := Copy("test/data/case12", "test/data.copy/case12", opt)
+	Expect(t, err).ToBe(nil)
+
+	content, err := ioutil.ReadFile("test/data.copy/case12/README.md")
+	Expect(t, err).ToBe(nil)
+	Expect(t, string(content)).ToBe("case12 - README.md")
 }

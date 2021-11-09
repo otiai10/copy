@@ -6,6 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/otiai10/copy/blob/main/LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/otiai10/copy)](https://goreportcard.com/report/github.com/otiai10/copy)
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/otiai10/copy?sort=semver)](https://pkg.go.dev/github.com/otiai10/copy)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fotiai10%2Fcopy.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fotiai10%2Fcopy?ref=badge_shield)
 
 `copy` copies directories recursively.
 
@@ -44,14 +45,18 @@ type Options struct {
 	// On linux we can preserve only up to 1 millisecond accuracy
 	PreserveTimes bool
 
+	// The byte size of the buffer to use for copying files.
+	// If zero, the internal default buffer of 32KB is used.
+	// See https://golang.org/pkg/io/#CopyBuffer for more information.
+	CopyBufferSize uint
 }
 ```
 
 ```go
 // For example...
 opt := Options{
-	Skip: func(src string) {
-		return strings.HasSuffix(src, ".git")
+	Skip: func(src string) (bool, error) {
+		return strings.HasSuffix(src, ".git"), nil
 	},
 }
 err := Copy("your/directory", "your/directory.copy", opt)
@@ -60,3 +65,7 @@ err := Copy("your/directory", "your/directory.copy", opt)
 # Issues
 
 - https://github.com/otiai10/copy/issues
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fotiai10%2Fcopy.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fotiai10%2Fcopy?ref=badge_large)

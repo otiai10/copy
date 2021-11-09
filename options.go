@@ -24,12 +24,17 @@ type Options struct {
 	// at the expense of some performance penalty
 	Sync bool
 
-	// Preserve the atime and the mtime of the entries
-	// On linux we can preserve only up to 1 millisecond accuracy
+	// Preserve the atime and the mtime of the entries.
+	// On linux we can preserve only up to 1 millisecond accuracy.
 	PreserveTimes bool
 
 	// Preserve the uid and the gid of
 	PreserveOwner bool
+
+	// The byte size of the buffer to use for copying files.
+	// If zero, the internal default buffer of 32KB is used.
+	// See https://golang.org/pkg/io/#CopyBuffer for more information.
+	CopyBufferSize uint
 
 	intent struct {
 		src  string
@@ -72,9 +77,10 @@ func getDefaultOptions(src, dest string) Options {
 		Skip: func(string) (bool, error) {
 			return false, nil // Don't skip
 		},
-		AddPermission: 0,     // Add nothing
-		Sync:          false, // Do not sync
-		PreserveTimes: false, // Do not preserve the modification time
+		AddPermission:  0,     // Add nothing
+		Sync:           false, // Do not sync
+		PreserveTimes:  false, // Do not preserve the modification time
+		CopyBufferSize: 0,     // Do not specify, use default bufsize (32*1024)
 		intent: struct {
 			src  string
 			dest string
