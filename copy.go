@@ -104,8 +104,15 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 		err = f.Sync()
 	}
 
+	if opt.PreserveOwner {
+		if err := preserveOwner(src, dest, info); err != nil {
+			return err
+		}
+	}
 	if opt.PreserveTimes {
-		return preserveTimes(info, dest)
+		if err := preserveTimes(info, dest); err != nil {
+			return err
+		}
 	}
 
 	return
@@ -154,7 +161,15 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 	}
 
 	if opt.PreserveTimes {
-		return preserveTimes(info, destdir)
+		if err := preserveTimes(info, destdir); err != nil {
+			return err
+		}
+	}
+
+	if opt.PreserveOwner {
+		if err := preserveOwner(srcdir, destdir, info); err != nil {
+			return err
+		}
 	}
 
 	return

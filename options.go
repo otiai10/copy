@@ -28,6 +28,9 @@ type Options struct {
 	// On linux we can preserve only up to 1 millisecond accuracy.
 	PreserveTimes bool
 
+	// Preserve the uid and the gid of
+	PreserveOwner bool
+
 	// The byte size of the buffer to use for copying files.
 	// If zero, the internal default buffer of 32KB is used.
 	// See https://golang.org/pkg/io/#CopyBuffer for more information.

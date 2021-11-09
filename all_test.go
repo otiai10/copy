@@ -313,3 +313,9 @@ func TestOptions_CopyBufferSize(t *testing.T) {
 	Expect(t, err).ToBe(nil)
 	Expect(t, string(content)).ToBe("case12 - README.md")
 }
+
+func TestOptions_PreserveOwner(t *testing.T) {
+	opt := Options{PreserveOwner: true}
+	err := Copy("test/data/case13", "test/data.copy/case13", opt)
+	Expect(t, err).ToBe(nil)
+}
