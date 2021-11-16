@@ -137,14 +137,16 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 		return err // Unwelcome error type...!
 	}
 
-	originalMode := info.Mode()
+	if !opt.NoTemporaryPermChanges {
+		originalMode := info.Mode()
 
-	// Make dest dir with 0755 so that everything writable.
-	if err = os.MkdirAll(destdir, tmpPermissionForDirectory); err != nil {
-		return
+		// Make dest dir with 0755 so that everything writable.
+		if err = os.MkdirAll(destdir, tmpPermissionForDirectory); err != nil {
+			return
+		}
+		// Recover dir mode with original one.
+		defer chmod(destdir, originalMode|opt.AddPermission, &err)
 	}
-	// Recover dir mode with original one.
-	defer chmod(destdir, originalMode|opt.AddPermission, &err)
 
 	contents, err := ioutil.ReadDir(srcdir)
 	if err != nil {
