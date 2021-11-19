@@ -217,6 +217,14 @@ func TestOptions_AddPermission(t *testing.T) {
 	Expect(t, info.Mode()).ToBe(os.FileMode(0444 | 0222))
 }
 
+func TestOptions_NoTemporaryPermChanges(t *testing.T) {
+	opt := Options{
+		NoTemporaryPermChanges: true,
+	}
+	err := Copy("test/data/case14", "test/owned-by-root", opt)
+	Expect(t, err).ToBe(nil)
+}
+
 func TestOptions_Sync(t *testing.T) {
 	// With Sync option, each file will be flushed to storage on copying.
 	// TODO: Since it's a bit hard to simulate real usecases here. This testcase is nonsense.
