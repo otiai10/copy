@@ -24,11 +24,6 @@ type Options struct {
 	// at the expense of some performance penalty
 	Sync bool
 
-	// Prevent the copy operation making temporary changes to the permissions on the destination directory.
-	// Temporary changes are made to ensure that files can be copied even if the source directory is not writeable.
-	// You will want to enable this option if the target directory is not owned by the copy process.
-	NoTemporaryPermChanges bool
-
 	// Preserve the atime and the mtime of the entries.
 	// On linux we can preserve only up to 1 millisecond accuracy.
 	PreserveTimes bool
