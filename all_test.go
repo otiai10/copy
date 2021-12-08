@@ -22,6 +22,7 @@ func teardown(m *testing.M) {
 	os.RemoveAll("test/data/case03/case01")
 	os.RemoveAll("test/data.copy")
 	os.RemoveAll("test/data.copyTime")
+	os.RemoveAll("test/owned-by-root") // Do not check the error ;)
 }
 
 func TestCopy(t *testing.T) {
@@ -218,10 +219,10 @@ func TestOptions_AddPermission(t *testing.T) {
 }
 
 func TestOptions_NoTemporaryPermChanges(t *testing.T) {
-	opt := Options{
-		NoTemporaryPermChanges: true,
-	}
-	err := Copy("test/data/case14", "test/owned-by-root", opt)
+	// opt := Options{
+	// 	NoTemporaryPermChanges: true,
+	// }
+	err := Copy("test/data/case14", "test/owned-by-root")
 	Expect(t, err).ToBe(nil)
 }
 
