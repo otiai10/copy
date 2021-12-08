@@ -30,6 +30,7 @@ func TestCopy(t *testing.T) {
 	Expect(t, err).ToBe(nil)
 	info, err := os.Stat("./test/data.copy/case00/README.md")
 	Expect(t, err).ToBe(nil)
+	Expect(t, info).Not().ToBe(nil)
 	Expect(t, info.IsDir()).ToBe(false)
 
 	When(t, "specified src doesn't exist", func(t *testing.T) {
@@ -196,7 +197,7 @@ func TestOptions_Skip(t *testing.T) {
 	})
 }
 
-func TestOptions_AddPermission(t *testing.T) {
+func TestOptions_PermissionControl(t *testing.T) {
 	info, err := os.Stat("test/data/case07/dir_0555")
 	Expect(t, err).ToBe(nil)
 	Expect(t, info.Mode()).ToBe(os.FileMode(0555) | os.ModeDir)
@@ -205,7 +206,7 @@ func TestOptions_AddPermission(t *testing.T) {
 	Expect(t, err).ToBe(nil)
 	Expect(t, info.Mode()).ToBe(os.FileMode(0444))
 
-	opt := Options{AddPermission: 0222}
+	opt := Options{PermissionControl: AddPermission(0222)}
 	err = Copy("test/data/case07", "test/data.copy/case07", opt)
 	Expect(t, err).ToBe(nil)
 
@@ -216,14 +217,13 @@ func TestOptions_AddPermission(t *testing.T) {
 	info, err = os.Stat("test/data.copy/case07/file_0444")
 	Expect(t, err).ToBe(nil)
 	Expect(t, info.Mode()).ToBe(os.FileMode(0444 | 0222))
-}
 
-func TestOptions_NoTemporaryPermChanges(t *testing.T) {
-	// opt := Options{
-	// 	NoTemporaryPermChanges: true,
-	// }
-	err := Copy("test/data/case14", "test/owned-by-root")
-	Expect(t, err).ToBe(nil)
+	When(t, "try to copy a dir owned by other users", func(t *testing.T) {
+		err := Copy("test/data/case14", "test/owned-by-root", Options{
+			PermissionControl: DoNothing, // ONLY docker tests fail when you comment out this line
+		})
+		Expect(t, err).ToBe(nil)
+	})
 }
 
 func TestOptions_Sync(t *testing.T) {

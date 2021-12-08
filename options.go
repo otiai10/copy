@@ -16,7 +16,17 @@ type Options struct {
 
 	// AddPermission to every entities,
 	// NO MORE THAN 0777
+	// @OBSOLETE
+	// Use `PermissionControl = AddPermission(perm)` instead
 	AddPermission os.FileMode
+
+	// PermissionControl can preserve or even add permission to
+	// every entries, for example
+	//
+	//		opt.PermissionControl = AddPermission(0222)
+	//
+	// See permission_control.go for more detail.
+	PermissionControl PermissionControlFunc
 
 	// Sync file after copy.
 	// Useful in case when file must be on the disk
@@ -77,10 +87,11 @@ func getDefaultOptions(src, dest string) Options {
 		Skip: func(string) (bool, error) {
 			return false, nil // Don't skip
 		},
-		AddPermission:  0,     // Add nothing
-		Sync:           false, // Do not sync
-		PreserveTimes:  false, // Do not preserve the modification time
-		CopyBufferSize: 0,     // Do not specify, use default bufsize (32*1024)
+		AddPermission:     0,                  // Add nothing
+		PermissionControl: PerservePermission, // Just preserve permission
+		Sync:              false,              // Do not sync
+		PreserveTimes:     false,              // Do not preserve the modification time
+		CopyBufferSize:    0,                  // Do not specify, use default bufsize (32*1024)
 		intent: struct {
 			src  string
 			dest string

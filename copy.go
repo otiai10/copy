@@ -8,13 +8,6 @@ import (
 	"time"
 )
 
-const (
-	// tmpPermissionForDirectory makes the destination directory writable,
-	// so that stuff can be copied recursively even if any original directory is NOT writable.
-	// See https://github.com/otiai10/copy/pull/9 for more information.
-	tmpPermissionForDirectory = os.FileMode(0755)
-)
-
 type timespec struct {
 	Mtime time.Time
 	Atime time.Time
@@ -76,9 +69,11 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 	}
 	defer fclose(f, &err)
 
-	if err = os.Chmod(f.Name(), info.Mode()|opt.AddPermission); err != nil {
-		return
+	chmodfunc, err := opt.PermissionControl(info, dest)
+	if err != nil {
+		return err
 	}
+	chmodfunc(&err)
 
 	s, err := os.Open(src)
 	if err != nil {
@@ -137,14 +132,12 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 		return err // Unwelcome error type...!
 	}
 
-	originalMode := info.Mode()
-
 	// Make dest dir with 0755 so that everything writable.
-	if err = os.MkdirAll(destdir, tmpPermissionForDirectory); err != nil {
-		return
+	chmodfunc, err := opt.PermissionControl(info, destdir)
+	if err != nil {
+		return err
 	}
-	// Recover dir mode with original one.
-	defer chmod(destdir, originalMode|opt.AddPermission, &err)
+	defer chmodfunc(&err)
 
 	contents, err := ioutil.ReadDir(srcdir)
 	if err != nil {
@@ -236,6 +229,13 @@ func assure(src, dest string, opts ...Options) Options {
 	}
 	if opts[0].Skip == nil {
 		opts[0].Skip = defopt.Skip
+	}
+	if opts[0].AddPermission > 0 {
+		opts[0].PermissionControl = AddPermission(opts[0].AddPermission)
+	} else {
+		if opts[0].PermissionControl == nil {
+			opts[0].PermissionControl = PerservePermission
+		}
 	}
 	opts[0].intent.src = defopt.intent.src
 	opts[0].intent.dest = defopt.intent.dest
