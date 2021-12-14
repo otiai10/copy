@@ -98,3 +98,26 @@ func getDefaultOptions(src, dest string) Options {
 		}{src, dest},
 	}
 }
+
+// assureOptions struct, should be called only once.
+// All optional values MUST NOT BE nil/zero after assured.
+func assureOptions(src, dest string, opts ...Options) Options {
+	defopt := getDefaultOptions(src, dest)
+	if len(opts) == 0 {
+		return defopt
+	}
+	if opts[0].OnSymlink == nil {
+		opts[0].OnSymlink = defopt.OnSymlink
+	}
+	if opts[0].Skip == nil {
+		opts[0].Skip = defopt.Skip
+	}
+	if opts[0].AddPermission > 0 {
+		opts[0].PermissionControl = AddPermission(opts[0].AddPermission)
+	} else if opts[0].PermissionControl == nil {
+		opts[0].PermissionControl = PerservePermission
+	}
+	opts[0].intent.src = defopt.intent.src
+	opts[0].intent.dest = defopt.intent.dest
+	return opts[0]
+}

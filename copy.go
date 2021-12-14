@@ -20,7 +20,7 @@ func Copy(src, dest string, opt ...Options) error {
 	if err != nil {
 		return err
 	}
-	return switchboard(src, dest, info, assure(src, dest, opt...))
+	return switchboard(src, dest, info, assureOptions(src, dest, opt...))
 }
 
 // switchboard switches proper copy functions regarding file type, etc...
@@ -206,38 +206,4 @@ func fclose(f *os.File, reported *error) {
 	if err := f.Close(); *reported == nil {
 		*reported = err
 	}
-}
-
-// chmod ANYHOW changes file mode,
-// with asiging error raised during Chmod,
-// BUT respecting the error already reported.
-func chmod(dir string, mode os.FileMode, reported *error) {
-	if err := os.Chmod(dir, mode); *reported == nil {
-		*reported = err
-	}
-}
-
-// assure Options struct, should be called only once.
-// All optional values MUST NOT BE nil/zero after assured.
-func assure(src, dest string, opts ...Options) Options {
-	defopt := getDefaultOptions(src, dest)
-	if len(opts) == 0 {
-		return defopt
-	}
-	if opts[0].OnSymlink == nil {
-		opts[0].OnSymlink = defopt.OnSymlink
-	}
-	if opts[0].Skip == nil {
-		opts[0].Skip = defopt.Skip
-	}
-	if opts[0].AddPermission > 0 {
-		opts[0].PermissionControl = AddPermission(opts[0].AddPermission)
-	} else {
-		if opts[0].PermissionControl == nil {
-			opts[0].PermissionControl = PerservePermission
-		}
-	}
-	opts[0].intent.src = defopt.intent.src
-	opts[0].intent.dest = defopt.intent.dest
-	return opts[0]
 }
