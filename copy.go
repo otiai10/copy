@@ -8,13 +8,6 @@ import (
 	"time"
 )
 
-const (
-	// tmpPermissionForDirectory makes the destination directory writable,
-	// so that stuff can be copied recursively even if any original directory is NOT writable.
-	// See https://github.com/otiai10/copy/pull/9 for more information.
-	tmpPermissionForDirectory = os.FileMode(0755)
-)
-
 type timespec struct {
 	Mtime time.Time
 	Atime time.Time
@@ -27,7 +20,7 @@ func Copy(src, dest string, opt ...Options) error {
 	if err != nil {
 		return err
 	}
-	return switchboard(src, dest, info, assure(src, dest, opt...))
+	return switchboard(src, dest, info, assureOptions(src, dest, opt...))
 }
 
 // switchboard switches proper copy functions regarding file type, etc...
@@ -76,9 +69,11 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 	}
 	defer fclose(f, &err)
 
-	if err = os.Chmod(f.Name(), info.Mode()|opt.AddPermission); err != nil {
-		return
+	chmodfunc, err := opt.PermissionControl(info, dest)
+	if err != nil {
+		return err
 	}
+	chmodfunc(&err)
 
 	s, err := os.Open(src)
 	if err != nil {
@@ -137,14 +132,12 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 		return err // Unwelcome error type...!
 	}
 
-	originalMode := info.Mode()
-
 	// Make dest dir with 0755 so that everything writable.
-	if err = os.MkdirAll(destdir, tmpPermissionForDirectory); err != nil {
-		return
+	chmodfunc, err := opt.PermissionControl(info, destdir)
+	if err != nil {
+		return err
 	}
-	// Recover dir mode with original one.
-	defer chmod(destdir, originalMode|opt.AddPermission, &err)
+	defer chmodfunc(&err)
 
 	contents, err := ioutil.ReadDir(srcdir)
 	if err != nil {
@@ -213,31 +206,4 @@ func fclose(f *os.File, reported *error) {
 	if err := f.Close(); *reported == nil {
 		*reported = err
 	}
-}
-
-// chmod ANYHOW changes file mode,
-// with asiging error raised during Chmod,
-// BUT respecting the error already reported.
-func chmod(dir string, mode os.FileMode, reported *error) {
-	if err := os.Chmod(dir, mode); *reported == nil {
-		*reported = err
-	}
-}
-
-// assure Options struct, should be called only once.
-// All optional values MUST NOT BE nil/zero after assured.
-func assure(src, dest string, opts ...Options) Options {
-	defopt := getDefaultOptions(src, dest)
-	if len(opts) == 0 {
-		return defopt
-	}
-	if opts[0].OnSymlink == nil {
-		opts[0].OnSymlink = defopt.OnSymlink
-	}
-	if opts[0].Skip == nil {
-		opts[0].Skip = defopt.Skip
-	}
-	opts[0].intent.src = defopt.intent.src
-	opts[0].intent.dest = defopt.intent.dest
-	return opts[0]
 }

@@ -1,4 +1,5 @@
 test/data.copy
+test/owned-by-root
 coverage.txt
 vendor
 .vagrant

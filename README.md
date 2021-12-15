@@ -34,9 +34,18 @@ type Options struct {
 	// Skip can specify which files should be skipped
 	Skip func(src string) (bool, error)
 
-	// AddPermission to every entry,
-	// NO MORE THAN 0777
-	AddPermission os.FileMode
+	// PermissionControl can control permission of
+	// every entry.
+	// When you want to add permission 0222, do like
+	//
+	//		PermissionControl = AddPermission(0222)
+	//
+	// or if you even don't want to touch permission,
+	//
+	//		PermissionControl = DoNothing
+	//
+	// By default, PermissionControl = PreservePermission
+	PermissionControl PermissionControlFunc
 
 	// Sync file after copy.
 	// Useful in case when file must be on the disk
