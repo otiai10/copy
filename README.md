@@ -16,7 +16,17 @@
 # Example Usage
 
 ```go
-err := Copy("your/directory", "your/directory.copy")
+package main
+
+import (
+	"fmt"
+	cp "github.com/otiai10/copy"
+)
+
+func main() {
+	err := cp.Copy("your/src", "your/dest")
+	fmt.Println(err) // nil
+}
 ```
 
 # Advanced Usage

@@ -30,7 +30,7 @@ func ExampleOptions() {
 			OnSymlink: func(src string) SymlinkAction {
 				return Skip
 			},
-			AddPermission: 0200,
+			PermissionControl: AddPermission(0200),
 		},
 	)
 	fmt.Println("Error:", err)
