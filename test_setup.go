@@ -1,3 +1,4 @@
+//go:build !windows && !plan9 && !netbsd && !aix && !illumos && !solaris
 // +build !windows,!plan9,!netbsd,!aix,!illumos,!solaris
 
 package copy
