@@ -1,12 +1,12 @@
-FROM archlinux:base-20201220.0.11678
+FROM centos:centos8
 
 WORKDIR /app
 
-RUN pacman -Sy -q --noconfirm \
-  glibc \
-  git \
-  gcc \
-  go
+RUN cd /etc/yum.repos.d/ \
+  && sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-* \
+  && sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
+RUN dnf upgrade -y --quiet
+RUN dnf install -y --quiet git go
 
 RUN useradd -m someuser
 

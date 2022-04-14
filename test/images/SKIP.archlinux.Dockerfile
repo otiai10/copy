@@ -1,11 +1,13 @@
-FROM centos:centos8
+FROM archlinux:base-20201220.0.11678
 
 WORKDIR /app
 
-RUN yum update -y -q \
-    && yum install -y --quiet \
-      git \
-      go
+RUN pacman -Sy -q --noconfirm archlinux-keyring
+RUN pacman -Sy -q --noconfirm \
+  glibc \
+  git \
+  gcc \
+  go
 
 RUN useradd -m someuser
 
