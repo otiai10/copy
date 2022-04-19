@@ -103,6 +103,10 @@ function test_docker_runtimes() {
         continue
       fi
     fi
+    if [[ "${testcase}" == "SKIP"* ]]; then
+      echo "${testcase}"
+      continue
+    fi
     echo "┌───────────── ${testcase}"
     if [ -n "${BUILD}" ]; then
       echo "│ [Docker] Building image..."
@@ -132,6 +136,10 @@ function test_vagrant_runtimes() {
     testcase=`basename ${runtime} | sed -e s/\.Vagrantfile$//`
     if [ -n "${MATCH}" ]; then
       if [[ "${testcase}" != *${MATCH}* ]]; then continue; fi
+    fi
+    if [[ "${testcase}" == "SKIP"* ]]; then
+      echo "${testcase}"
+      continue
     fi
     echo "┌───────────── ${testcase}"
     echo "│ [Vagrant] Making VM up..."

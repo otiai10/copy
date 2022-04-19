@@ -74,21 +74,20 @@ func TestCopy(t *testing.T) {
 	When(t, "try to copy a directory that has no write permission and copy file inside along with it", func(t *testing.T) {
 		src := "test/data/case05"
 		dest := "test/data.copy/case05"
-		err := os.Chmod(src, os.FileMode(0555))
+		err := os.Chmod(src, os.FileMode(0o555))
 		Expect(t, err).ToBe(nil)
 		err = Copy(src, dest)
 		Expect(t, err).ToBe(nil)
 		info, err := os.Lstat(dest)
 		Expect(t, err).ToBe(nil)
-		Expect(t, info.Mode().Perm()).ToBe(os.FileMode(0555))
-		err = os.Chmod(dest, 0755)
+		Expect(t, info.Mode().Perm()).ToBe(os.FileMode(0o555))
+		err = os.Chmod(dest, 0o755)
 		Expect(t, err).ToBe(nil)
 	})
 }
 
 func TestCopy_NamedPipe(t *testing.T) {
-
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == "windows" || runtime.GOOS == "js" {
 		t.Skip("See https://github.com/otiai10/copy/issues/47")
 	}
 
@@ -100,7 +99,7 @@ func TestCopy_NamedPipe(t *testing.T) {
 		info, err := os.Lstat("test/data/case11/foo/bar")
 		Expect(t, err).ToBe(nil)
 		Expect(t, info.Mode()&os.ModeNamedPipe != 0).ToBe(true)
-		Expect(t, info.Mode().Perm()).ToBe(os.FileMode(0555))
+		Expect(t, info.Mode().Perm()).ToBe(os.FileMode(0o555))
 	})
 
 	When(t, "specified src is a named pipe", func(t *testing.T) {
@@ -111,9 +110,8 @@ func TestCopy_NamedPipe(t *testing.T) {
 		info, err := os.Lstat(dest)
 		Expect(t, err).ToBe(nil)
 		Expect(t, info.Mode()&os.ModeNamedPipe != 0).ToBe(true)
-		Expect(t, info.Mode().Perm()).ToBe(os.FileMode(0555))
+		Expect(t, info.Mode().Perm()).ToBe(os.FileMode(0o555))
 	})
-
 }
 
 func TestOptions_OnSymlink(t *testing.T) {
@@ -200,23 +198,23 @@ func TestOptions_Skip(t *testing.T) {
 func TestOptions_PermissionControl(t *testing.T) {
 	info, err := os.Stat("test/data/case07/dir_0555")
 	Expect(t, err).ToBe(nil)
-	Expect(t, info.Mode()).ToBe(os.FileMode(0555) | os.ModeDir)
+	Expect(t, info.Mode()).ToBe(os.FileMode(0o555) | os.ModeDir)
 
 	info, err = os.Stat("test/data/case07/file_0444")
 	Expect(t, err).ToBe(nil)
-	Expect(t, info.Mode()).ToBe(os.FileMode(0444))
+	Expect(t, info.Mode()).ToBe(os.FileMode(0o444))
 
-	opt := Options{PermissionControl: AddPermission(0222)}
+	opt := Options{PermissionControl: AddPermission(0o222)}
 	err = Copy("test/data/case07", "test/data.copy/case07", opt)
 	Expect(t, err).ToBe(nil)
 
 	info, err = os.Stat("test/data.copy/case07/dir_0555")
 	Expect(t, err).ToBe(nil)
-	Expect(t, info.Mode()).ToBe(os.FileMode(0555|0222) | os.ModeDir)
+	Expect(t, info.Mode()).ToBe(os.FileMode(0o555|0o222) | os.ModeDir)
 
 	info, err = os.Stat("test/data.copy/case07/file_0444")
 	Expect(t, err).ToBe(nil)
-	Expect(t, info.Mode()).ToBe(os.FileMode(0444 | 0222))
+	Expect(t, info.Mode()).ToBe(os.FileMode(0o444 | 0o222))
 
 	When(t, "try to copy a dir owned by other users", func(t *testing.T) {
 		err := Copy("test/data/case14", "test/owned-by-root", Options{
