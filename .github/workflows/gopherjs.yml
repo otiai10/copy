@@ -24,7 +24,18 @@ jobs:
       id: go
     
     - name: Install GopherJS
-      run: go get -u github.com/gopherjs/gopherjs
+      run: |
+        mkdir -p $(go env GOPATH)/src/github.com/gopherjs;
+        cd $(go env GOPATH)/src/github.com/gopherjs;
+        git clone --depth 1 --branch v1.17.2+go1.17.9 https://github.com/gopherjs/gopherjs.git;
+        cd gopherjs;
+        go install;
+        npm install source-map-support;
+        cd $(go env GOPATH)/src/github.com/gopherjs/gopherjs/node-syscall/;
+        npm install --global node-gyp;
+        node-gyp rebuild;
+        mkdir -p ~/.node_libraries/;
+        cp build/Release/syscall.node ~/.node_libraries/syscall.node
 
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
@@ -33,4 +44,4 @@ jobs:
       run: go get -v -t -d ./...
 
     - name: Test
-      run: gopherjs test -v
+      run: $(go env GOPATH)/bin/gopherjs test -v
