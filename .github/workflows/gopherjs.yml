@@ -1,3 +1,6 @@
+# This package only works fully with GopherJS as of 2c06401a, which is not yet
+# released, thus we're pulling in `master`. Once GopherJS 1.18 is released with
+# this support, we can depend on a proper tag.
 name: GopherJS
 
 on:
@@ -27,7 +30,7 @@ jobs:
       run: |
         mkdir -p $(go env GOPATH)/src/github.com/gopherjs;
         cd $(go env GOPATH)/src/github.com/gopherjs;
-        git clone --depth 1 --branch v1.17.2+go1.17.9 https://github.com/gopherjs/gopherjs.git;
+        git clone --depth 1 --branch master https://github.com/gopherjs/gopherjs.git;
         cd gopherjs;
         go install;
         npm install source-map-support;
