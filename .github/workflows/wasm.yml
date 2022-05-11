@@ -1,4 +1,4 @@
-name: Go
+name: Go WASM
 
 on:
   push:
@@ -13,8 +13,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        go: [1.13, 1.14, 1.15, 1.16, 1.17, 1.18]
+        os: [ubuntu-latest]
+        go: [1.17, 1.18]
     steps:
 
     - name: Set up Go
@@ -30,16 +30,7 @@ jobs:
       run: go get -v -t -d ./...
 
     - name: Build
-      run: go build -v .
+      run: GOOS=js GOARCH=wasm go build -v .
 
     - name: Test
-      run: go test -v --tags=go${{ matrix.go }}
-
-    - name: Coverage
-      run: go test -v -cover -race -coverprofile=coverage -covermode=atomic --tags=go${{ matrix.go }}
-
-    - name: Upload coverage
-      uses: codecov/codecov-action@v1
-      with:
-        file: ./coverage
-        verbose: true
+      run: GOOS=js GOARCH=wasm go test -v -exec="$(go env GOROOT)/misc/wasm/go_js_wasm_exec"
