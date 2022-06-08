@@ -1,5 +1,5 @@
-//go:build !windows && !plan9 && !netbsd && !aix && !illumos && !solaris
-// +build !windows,!plan9,!netbsd,!aix,!illumos,!solaris
+//go:build !windows && !plan9 && !netbsd && !aix && !illumos && !solaris && !js
+// +build !windows,!plan9,!netbsd,!aix,!illumos,!solaris,!js
 
 package copy
 
