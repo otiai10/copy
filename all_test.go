@@ -249,6 +249,15 @@ func TestOptions_PreserveTimes(t *testing.T) {
 		Expect(t, plain.ModTime().Unix()).Not().ToBe(orig.ModTime().Unix())
 		Expect(t, preserved.ModTime().Unix()).ToBe(orig.ModTime().Unix())
 	}
+
+	orig, err := os.Lstat("test/data/case09/symlink")
+	Expect(t, err).ToBe(nil)
+	plain, err := os.Lstat("test/data.copy/case09/symlink")
+	Expect(t, err).ToBe(nil)
+	preserved, err := os.Lstat("test/data.copy/case09-preservetimes/symlink")
+	Expect(t, err).ToBe(nil)
+	Expect(t, plain.ModTime().Unix()).Not().ToBe(orig.ModTime().Unix())
+	Expect(t, preserved.ModTime().Unix()).ToBe(orig.ModTime().Unix())
 }
 
 func TestOptions_OnDirExists(t *testing.T) {

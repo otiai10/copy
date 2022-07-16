@@ -176,7 +176,7 @@ func onsymlink(src, dest string, opt Options) error {
 			return err
 		}
 		if opt.PreserveTimes {
-			info, err := os.Stat(src)
+			info, err := os.Lstat(src)
 			if err != nil {
 				return err
 			}
