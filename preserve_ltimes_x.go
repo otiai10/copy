@@ -6,6 +6,5 @@ package copy
 import "os"
 
 func preserveLtimes(srcinfo os.FileInfo, dest string) error {
-	//Unsupported
-	return nil
+	return nil // Unsupported
 }
