@@ -26,6 +26,11 @@ func Copy(src, dest string, opt ...Options) error {
 // switchboard switches proper copy functions regarding file type, etc...
 // If there would be anything else here, add a case to this switchboard.
 func switchboard(src, dest string, info os.FileInfo, opt Options) (err error) {
+
+	if info.Mode()&os.ModeDevice != 0 && !opt.Specials {
+		return err
+	}
+
 	switch {
 	case info.Mode()&os.ModeSymlink != 0:
 		err = onsymlink(src, dest, opt)

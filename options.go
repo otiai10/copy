@@ -14,6 +14,9 @@ type Options struct {
 	// Skip can specify which files should be skipped
 	Skip func(src string) (bool, error)
 
+	// Specials includes special files to be copied. default false.
+	Specials bool
+
 	// AddPermission to every entities,
 	// NO MORE THAN 0777
 	// @OBSOLETE
@@ -90,6 +93,7 @@ func getDefaultOptions(src, dest string) Options {
 		AddPermission:     0,                  // Add nothing
 		PermissionControl: PerservePermission, // Just preserve permission
 		Sync:              false,              // Do not sync
+		Specials:          false,              // Do not copy special files
 		PreserveTimes:     false,              // Do not preserve the modification time
 		CopyBufferSize:    0,                  // Do not specify, use default bufsize (32*1024)
 		intent: struct {
