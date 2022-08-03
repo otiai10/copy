@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	. "github.com/otiai10/mint"
+	"golang.org/x/sys/unix"
 )
 
 func TestOptions_PreserveLTimes(t *testing.T) {
@@ -25,4 +26,10 @@ func TestOptions_PreserveLTimes(t *testing.T) {
 	Expect(t, err).ToBe(nil)
 	Expect(t, plain.ModTime().Unix()).Not().ToBe(orig.ModTime().Unix())
 	Expect(t, preserved.ModTime().Unix()).ToBe(orig.ModTime().Unix())
+}
+
+func TestOptions_PreserveLTimesErrorReturn(t *testing.T) {
+	err := preserveLtimes("doesnotexist_original.txt", "doesnotexist_copy.txt")
+	Expect(t, err).ToBe(unix.ENOENT)
+	Expect(t, os.IsNotExist(err)).ToBe(true)
 }

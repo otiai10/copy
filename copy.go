@@ -176,11 +176,7 @@ func onsymlink(src, dest string, opt Options) error {
 			return err
 		}
 		if opt.PreserveTimes {
-			info, err := os.Lstat(src)
-			if err != nil {
-				return err
-			}
-			return preserveLtimes(info, dest)
+			return preserveLtimes(src, dest)
 		}
 		return nil
 	case Deep:

@@ -4,16 +4,17 @@
 package copy
 
 import (
-	"os"
-
 	"golang.org/x/sys/unix"
 )
 
-func preserveLtimes(srcinfo os.FileInfo, dest string) error {
-	spec := getTimeSpec(srcinfo)
+func preserveLtimes(src, dest string) error {
+	info := new(unix.Stat_t)
+	if err := unix.Lstat(src, info); err != nil {
+		return err
+	}
 
 	return unix.Lutimes(dest, []unix.Timeval{
-		unix.NsecToTimeval(spec.Atime.UnixNano()),
-		unix.NsecToTimeval(spec.Mtime.UnixNano()),
+		unix.NsecToTimeval(info.Atim.Nano()),
+		unix.NsecToTimeval(info.Mtim.Nano()),
 	})
 }
