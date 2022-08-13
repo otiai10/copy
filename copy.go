@@ -171,7 +171,13 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 func onsymlink(src, dest string, opt Options) error {
 	switch opt.OnSymlink(src) {
 	case Shallow:
-		return lcopy(src, dest)
+		if err := lcopy(src, dest); err != nil {
+			return err
+		}
+		if opt.PreserveTimes {
+			return preserveLtimes(src, dest)
+		}
+		return nil
 	case Deep:
 		orig, err := os.Readlink(src)
 		if err != nil {
