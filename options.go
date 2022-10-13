@@ -46,6 +46,10 @@ type Options struct {
 	// See https://golang.org/pkg/io/#CopyBuffer for more information.
 	CopyBufferSize uint
 
+	// Limit the rate of copying files with n KB per second.
+	// If zero, will not limit the copy operation.
+	CopyRateLimit int64
+
 	intent struct {
 		src  string
 		dest string
@@ -92,6 +96,7 @@ func getDefaultOptions(src, dest string) Options {
 		Sync:              false,              // Do not sync
 		PreserveTimes:     false,              // Do not preserve the modification time
 		CopyBufferSize:    0,                  // Do not specify, use default bufsize (32*1024)
+		CopyRateLimit:     0,                  // Do not specify, use default rate (unlimited)
 		intent: struct {
 			src  string
 			dest string
