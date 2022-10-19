@@ -12,7 +12,7 @@ type RateLimitedReader struct {
 }
 
 // NewRateLimitedReader
-// n means the number of Kb to be read per second
+// n means the number of KB to be read per second
 func NewRateLimitedReader(src io.Reader, n int64) io.Reader {
 	return &RateLimitedReader{
 		src:     src,

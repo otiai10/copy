@@ -3,10 +3,12 @@ package copy
 import (
 	"errors"
 	"io/ioutil"
+	"math"
 	"os"
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	. "github.com/otiai10/mint"
 )
@@ -325,4 +327,29 @@ func TestOptions_PreserveOwner(t *testing.T) {
 	opt := Options{PreserveOwner: true}
 	err := Copy("test/data/case13", "test/data.copy/case13", opt)
 	Expect(t, err).ToBe(nil)
+}
+
+func TestOptions_CopyRateLimit(t *testing.T) {
+	opt := Options{CopyRateLimit: 50} // 50 KB/s
+	size := int64(100 * 1024)         // 100 KB
+	costSec := int64(2)               // 2 seconds
+
+	file, err := os.Create("test/data/case16/large.file")
+	if err != nil {
+		t.Errorf("failed to create test file: %v", err)
+		return
+	}
+
+	if err := file.Truncate(size); err != nil {
+		t.Errorf("failed to truncate test file: %v", err)
+		t.SkipNow()
+		return
+	}
+
+	start := time.Now()
+	err = Copy("test/data/case16", "test/data.copy/case16", opt)
+	copyCost := time.Since(start)
+	Expect(t, err).ToBe(nil)
+	t.Log("copy cost", copyCost)
+	Expect(t, int64(math.Floor(copyCost.Seconds()+0.5)) == costSec).ToBe(true)
 }
