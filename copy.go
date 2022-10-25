@@ -83,10 +83,10 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 
 	var buf []byte = nil
 	var w io.Writer = f
-
 	var r io.Reader = s
-	if opt.CopyRateLimit > 0 {
-		r = NewRateLimitedReader(r, opt.CopyRateLimit)
+
+	if opt.WrapReader != nil {
+		r = opt.WrapReader(s)
 	}
 
 	if opt.CopyBufferSize != 0 {

@@ -2,8 +2,8 @@ package copy
 
 import (
 	"errors"
+	"io"
 	"io/ioutil"
-	"math"
 	"os"
 	"runtime"
 	"strings"
@@ -330,9 +330,6 @@ func TestOptions_PreserveOwner(t *testing.T) {
 }
 
 func TestOptions_CopyRateLimit(t *testing.T) {
-	opt := Options{CopyRateLimit: 50} // 50 KB/s
-	size := int64(100 * 1024)         // 100 KB
-	costSec := int64(2)               // 2 seconds
 
 	file, err := os.Create("test/data/case16/large.file")
 	if err != nil {
@@ -340,16 +337,36 @@ func TestOptions_CopyRateLimit(t *testing.T) {
 		return
 	}
 
+	size := int64(100 * 1024) // 100 KB
 	if err := file.Truncate(size); err != nil {
 		t.Errorf("failed to truncate test file: %v", err)
 		t.SkipNow()
 		return
 	}
 
+	opt := Options{WrapReader: func(src *os.File) io.Reader {
+		return &SleepyReader{src, 1}
+	}}
+
 	start := time.Now()
 	err = Copy("test/data/case16", "test/data.copy/case16", opt)
-	copyCost := time.Since(start)
+	elasped := time.Since(start)
 	Expect(t, err).ToBe(nil)
-	t.Log("copy cost", copyCost)
-	Expect(t, int64(math.Floor(copyCost.Seconds()+0.5)) == costSec).ToBe(true)
+	Expect(t, elasped > 5*time.Second).ToBe(true)
+}
+
+type SleepyReader struct {
+	src *os.File
+	sec time.Duration
+}
+
+func (r *SleepyReader) Read(p []byte) (int, error) {
+	n, e := r.src.Read(p)
+	if e != nil && e != io.EOF {
+		return n, e
+	}
+	if n > 0 {
+		time.Sleep(time.Second * r.sec)
+	}
+	return n, e
 }
