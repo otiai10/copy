@@ -15,7 +15,7 @@ type Options struct {
 	OnDirExists func(src, dest string) DirExistsAction
 
 	// Skip can specify which files should be skipped
-	Skip func(src string) (bool, error)
+	Skip func(srcinfo os.FileInfo, src, dest string) (bool, error)
 
 	// Specials includes special files to be copied. default false.
 	Specials bool
@@ -94,10 +94,8 @@ func getDefaultOptions(src, dest string) Options {
 		OnSymlink: func(string) SymlinkAction {
 			return Shallow // Do shallow copy
 		},
-		OnDirExists: nil, // Default behavior is "Merge".
-		Skip: func(string) (bool, error) {
-			return false, nil // Don't skip
-		},
+		OnDirExists:       nil,                // Default behavior is "Merge".
+		Skip:              nil,                // Do not skip anything
 		AddPermission:     0,                  // Add nothing
 		PermissionControl: PerservePermission, // Just preserve permission
 		Sync:              false,              // Do not sync

@@ -49,12 +49,14 @@ func switchboard(src, dest string, info os.FileInfo, opt Options) (err error) {
 // Because this "copy" could be called recursively,
 // "info" MUST be given here, NOT nil.
 func copyNextOrSkip(src, dest string, info os.FileInfo, opt Options) error {
-	skip, err := opt.Skip(src)
-	if err != nil {
-		return err
-	}
-	if skip {
-		return nil
+	if opt.Skip != nil {
+		skip, err := opt.Skip(info, src, dest)
+		if err != nil {
+			return err
+		}
+		if skip {
+			return nil
+		}
 	}
 	return switchboard(src, dest, info, opt)
 }
