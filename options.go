@@ -1,6 +1,9 @@
 package copy
 
-import "os"
+import (
+	"io"
+	"os"
+)
 
 // Options specifies optional actions on copying.
 type Options struct {
@@ -45,6 +48,11 @@ type Options struct {
 	// If zero, the internal default buffer of 32KB is used.
 	// See https://golang.org/pkg/io/#CopyBuffer for more information.
 	CopyBufferSize uint
+
+	// If you want to add some limitation on reading src file,
+	// you can wrap the src and provide new reader,
+	// such as `RateLimitReader` in the test case.
+	WrapReader func(src *os.File) io.Reader
 
 	intent struct {
 		src  string
@@ -92,6 +100,7 @@ func getDefaultOptions(src, dest string) Options {
 		Sync:              false,              // Do not sync
 		PreserveTimes:     false,              // Do not preserve the modification time
 		CopyBufferSize:    0,                  // Do not specify, use default bufsize (32*1024)
+		WrapReader:        nil,                // Do not wrap src files, use them as they are.
 		intent: struct {
 			src  string
 			dest string

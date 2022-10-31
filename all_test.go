@@ -2,11 +2,13 @@ package copy
 
 import (
 	"errors"
+	"io"
 	"io/ioutil"
 	"os"
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	. "github.com/otiai10/mint"
 )
@@ -325,4 +327,46 @@ func TestOptions_PreserveOwner(t *testing.T) {
 	opt := Options{PreserveOwner: true}
 	err := Copy("test/data/case13", "test/data.copy/case13", opt)
 	Expect(t, err).ToBe(nil)
+}
+
+func TestOptions_CopyRateLimit(t *testing.T) {
+
+	file, err := os.Create("test/data/case16/large.file")
+	if err != nil {
+		t.Errorf("failed to create test file: %v", err)
+		return
+	}
+
+	size := int64(100 * 1024) // 100 KB
+	if err := file.Truncate(size); err != nil {
+		t.Errorf("failed to truncate test file: %v", err)
+		t.SkipNow()
+		return
+	}
+
+	opt := Options{WrapReader: func(src *os.File) io.Reader {
+		return &SleepyReader{src, 1}
+	}}
+
+	start := time.Now()
+	err = Copy("test/data/case16", "test/data.copy/case16", opt)
+	elasped := time.Since(start)
+	Expect(t, err).ToBe(nil)
+	Expect(t, elasped > 5*time.Second).ToBe(true)
+}
+
+type SleepyReader struct {
+	src *os.File
+	sec time.Duration
+}
+
+func (r *SleepyReader) Read(p []byte) (int, error) {
+	n, e := r.src.Read(p)
+	if e != nil && e != io.EOF {
+		return n, e
+	}
+	if n > 0 {
+		time.Sleep(time.Second * r.sec)
+	}
+	return n, e
 }

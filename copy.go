@@ -83,7 +83,12 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 
 	var buf []byte = nil
 	var w io.Writer = f
-	// var r io.Reader = s
+	var r io.Reader = s
+
+	if opt.WrapReader != nil {
+		r = opt.WrapReader(s)
+	}
+
 	if opt.CopyBufferSize != 0 {
 		buf = make([]byte, opt.CopyBufferSize)
 		// Disable using `ReadFrom` by io.CopyBuffer.
@@ -91,7 +96,8 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 		w = struct{ io.Writer }{f}
 		// r = struct{ io.Reader }{s}
 	}
-	if _, err = io.CopyBuffer(w, s, buf); err != nil {
+
+	if _, err = io.CopyBuffer(w, r, buf); err != nil {
 		return err
 	}
 
