@@ -197,6 +197,13 @@ func TestOptions_Skip(t *testing.T) {
 	})
 }
 
+func TestOptions_Specials(t *testing.T) {
+	if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+		err := Copy("/dev/null", "test/data.copy/dev-null", Options{Specials: false})
+		Expect(t, err).ToBe(nil)
+	}
+}
+
 func TestOptions_PermissionControl(t *testing.T) {
 	info, err := os.Stat("test/data/case07/dir_0555")
 	Expect(t, err).ToBe(nil)
