@@ -42,7 +42,7 @@ type Options struct {
 	OnDirExists func(src, dest string) DirExistsAction
 
 	// Skip can specify which files should be skipped
-	Skip func(src string) (bool, error)
+	Skip func(srcinfo os.FileInfo, src, dest string) (bool, error)
 
 	// PermissionControl can control permission of
 	// every entry.
@@ -80,7 +80,7 @@ type Options struct {
 ```go
 // For example...
 opt := Options{
-	Skip: func(src string) (bool, error) {
+	Skip: func(info os.FileInfo, src, dest string) (bool, error) {
 		return strings.HasSuffix(src, ".git"), nil
 	},
 }

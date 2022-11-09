@@ -49,12 +49,14 @@ func switchboard(src, dest string, info os.FileInfo, opt Options) (err error) {
 // Because this "copy" could be called recursively,
 // "info" MUST be given here, NOT nil.
 func copyNextOrSkip(src, dest string, info os.FileInfo, opt Options) error {
-	skip, err := opt.Skip(src)
-	if err != nil {
-		return err
-	}
-	if skip {
-		return nil
+	if opt.Skip != nil {
+		skip, err := opt.Skip(info, src, dest)
+		if err != nil {
+			return err
+		}
+		if skip {
+			return nil
+		}
 	}
 	return switchboard(src, dest, info, opt)
 }
@@ -129,18 +131,10 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 // and pass everything to "copy" recursively.
 func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 
-	_, err = os.Stat(destdir)
-	if err == nil && opt.OnDirExists != nil && destdir != opt.intent.dest {
-		switch opt.OnDirExists(srcdir, destdir) {
-		case Replace:
-			if err := os.RemoveAll(destdir); err != nil {
-				return err
-			}
-		case Untouchable:
-			return nil
-		} // case "Merge" is default behaviour. Go through.
-	} else if err != nil && !os.IsNotExist(err) {
-		return err // Unwelcome error type...!
+	if skip, err := onDirExists(opt, srcdir, destdir); err != nil {
+		return err
+	} else if skip {
+		return nil
 	}
 
 	// Make dest dir with 0755 so that everything writable.
@@ -177,6 +171,23 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 	}
 
 	return
+}
+
+func onDirExists(opt Options, srcdir, destdir string) (bool, error) {
+	_, err := os.Stat(destdir)
+	if err == nil && opt.OnDirExists != nil && destdir != opt.intent.dest {
+		switch opt.OnDirExists(srcdir, destdir) {
+		case Replace:
+			if err := os.RemoveAll(destdir); err != nil {
+				return false, err
+			}
+		case Untouchable:
+			return true, nil
+		} // case "Merge" is default behaviour. Go through.
+	} else if err != nil && !os.IsNotExist(err) {
+		return true, err // Unwelcome error type...!
+	}
+	return false, nil
 }
 
 func onsymlink(src, dest string, opt Options) error {

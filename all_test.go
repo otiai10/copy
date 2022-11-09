@@ -152,7 +152,7 @@ func TestOptions_OnSymlink(t *testing.T) {
 }
 
 func TestOptions_Skip(t *testing.T) {
-	opt := Options{Skip: func(src string) (bool, error) {
+	opt := Options{Skip: func(info os.FileInfo, src, dest string) (bool, error) {
 		switch {
 		case strings.HasSuffix(src, "_skip"):
 			return true, nil
@@ -186,7 +186,7 @@ func TestOptions_Skip(t *testing.T) {
 
 	Because(t, "if Skip func returns error, Copy should be interrupted", func(t *testing.T) {
 		errInsideSkipFunc := errors.New("Something wrong inside Skip")
-		opt := Options{Skip: func(src string) (bool, error) {
+		opt := Options{Skip: func(info os.FileInfo, src, dest string) (bool, error) {
 			return false, errInsideSkipFunc
 		}}
 		err := Copy("test/data/case06", "test/data.copy/case06.01", opt)
@@ -357,9 +357,9 @@ func TestOptions_CopyRateLimit(t *testing.T) {
 
 	start := time.Now()
 	err = Copy("test/data/case16", "test/data.copy/case16", opt)
-	elasped := time.Since(start)
+	elapsed := time.Since(start)
 	Expect(t, err).ToBe(nil)
-	Expect(t, elasped > 5*time.Second).ToBe(true)
+	Expect(t, elapsed > 5*time.Second).ToBe(true)
 }
 
 type SleepyReader struct {
