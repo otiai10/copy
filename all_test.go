@@ -357,9 +357,9 @@ func TestOptions_CopyRateLimit(t *testing.T) {
 
 	start := time.Now()
 	err = Copy("test/data/case16", "test/data.copy/case16", opt)
-	elasped := time.Since(start)
+	elapsed := time.Since(start)
 	Expect(t, err).ToBe(nil)
-	Expect(t, elasped > 5*time.Second).ToBe(true)
+	Expect(t, elapsed > 5*time.Second).ToBe(true)
 }
 
 type SleepyReader struct {
