@@ -205,6 +205,9 @@ func onsymlink(src, dest string, opt Options) error {
 		if err != nil {
 			return err
 		}
+		if !filepath.IsAbs(orig) {
+			orig = filepath.Join(filepath.Dir(src), orig)
+		}
 		info, err := os.Lstat(orig)
 		if err != nil {
 			return err
