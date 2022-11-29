@@ -201,12 +201,9 @@ func onsymlink(src, dest string, opt Options) error {
 		}
 		return nil
 	case Deep:
-		orig, err := os.Readlink(src)
+		orig, err := filepath.EvalSymlinks(src)
 		if err != nil {
 			return err
-		}
-		if !filepath.IsAbs(orig) {
-			orig = filepath.Join(filepath.Dir(src), orig)
 		}
 		info, err := os.Lstat(orig)
 		if err != nil {
