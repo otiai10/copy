@@ -22,6 +22,7 @@ func TestMain(m *testing.M) {
 
 func teardown(m *testing.M) {
 	os.RemoveAll("test/data/case03/case01")
+	os.RemoveAll("test/data/case03/relative_case01")
 	os.RemoveAll("test/data.copy")
 	os.RemoveAll("test/data.copyTime")
 	os.RemoveAll("test/owned-by-root") // Do not check the error ;)
@@ -121,6 +122,9 @@ func TestOptions_OnSymlink(t *testing.T) {
 	err := Copy("test/data/case03", "test/data.copy/case03.deep", opt)
 	Expect(t, err).ToBe(nil)
 	info, err := os.Lstat("test/data.copy/case03.deep/case01")
+	Expect(t, err).ToBe(nil)
+	Expect(t, info.Mode()&os.ModeSymlink).ToBe(os.FileMode(0))
+	info, err = os.Lstat("test/data.copy/case03.deep/relative_case01")
 	Expect(t, err).ToBe(nil)
 	Expect(t, info.Mode()&os.ModeSymlink).ToBe(os.FileMode(0))
 
