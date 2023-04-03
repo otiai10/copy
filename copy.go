@@ -19,7 +19,7 @@ func Copy(src, dest string, opts ...Options) error {
 	opt := assureOptions(src, dest, opts...)
 	info, err := os.Lstat(src)
 	if err != nil {
-		return onError(err, opt) // called both, we don't know if it's a file or directory
+		return onError(err, opt)
 	}
 	return switchboard(src, dest, info, opt)
 }
