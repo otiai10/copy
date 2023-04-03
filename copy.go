@@ -15,17 +15,21 @@ type timespec struct {
 }
 
 // Copy copies src to dest, doesn't matter if src is a directory or a file.
-func Copy(src, dest string, opt ...Options) error {
+func Copy(src, dest string, opts ...Options) error {
+	opt := assureOptions(src, dest, opts...)
 	info, err := os.Lstat(src)
 	if err != nil {
-		return err
+		return onError(err, opt) // called both, we don't know if it's a file or directory
 	}
-	return switchboard(src, dest, info, assureOptions(src, dest, opt...))
+	return switchboard(src, dest, info, opt)
 }
 
 // switchboard switches proper copy functions regarding file type, etc...
 // If there would be anything else here, add a case to this switchboard.
 func switchboard(src, dest string, info os.FileInfo, opt Options) (err error) {
+	defer func() {
+		err = onError(err, opt)
+	}()
 
 	if info.Mode()&os.ModeDevice != 0 && !opt.Specials {
 		return err
@@ -130,7 +134,6 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 // with scanning contents inside the directory
 // and pass everything to "copy" recursively.
 func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
-
 	if skip, err := onDirExists(opt, srcdir, destdir); err != nil {
 		return err
 	} else if skip {
@@ -234,4 +237,14 @@ func fclose(f *os.File, reported *error) {
 	if err := f.Close(); *reported == nil {
 		*reported = err
 	}
+}
+
+// onError lets caller to handle errors
+// occured when copying a file.
+func onError(err error, opt Options) error {
+	if opt.OnErr == nil {
+		return err
+	}
+
+	return opt.OnErr(err)
 }

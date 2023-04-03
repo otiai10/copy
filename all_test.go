@@ -362,6 +362,39 @@ func TestOptions_CopyRateLimit(t *testing.T) {
 	Expect(t, elapsed > 5*time.Second).ToBe(true)
 }
 
+func TestOptions_OnFileError(t *testing.T) {
+	opt := Options{
+		OnErr: nil,
+	}
+
+	// existing, process nromally
+	err := Copy("test/data/case17", "test/data.copy/case17", opt)
+	Expect(t, err).ToBe(nil)
+
+	// not existing, process err
+	err = Copy("test/data/case17/non-existing", "test/data.copy/case17/non-existing", opt)
+	Expect(t, os.IsNotExist(err)).ToBe(true)
+
+	_, err = os.Stat("test/data.copy/case17/non-existing")
+	Expect(t, os.IsNotExist(err)).ToBe(true)
+
+	// not existing, process err
+	opt.OnErr = func(err error) error { return err }
+	err = Copy("test/data/case17/non-existing", "test/data.copy/case17/non-existing", opt)
+	Expect(t, os.IsNotExist(err)).ToBe(true)
+
+	_, err = os.Stat("test/data.copy/case17/non-existing")
+	Expect(t, os.IsNotExist(err)).ToBe(true)
+
+	// not existing, ignore err
+	opt.OnErr = func(err error) error { return nil }
+	err = Copy("test/data/case17/non-existing", "test/data.copy/case17/non-existing", opt)
+	Expect(t, err).ToBe(nil)
+
+	_, err = os.Stat("test/data.copy/case17/non-existing")
+	Expect(t, os.IsNotExist(err)).ToBe(true)
+}
+
 type SleepyReader struct {
 	src *os.File
 	sec time.Duration
