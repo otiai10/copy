@@ -378,6 +378,16 @@ func TestOptions_OnFileError(t *testing.T) {
 	_, err = os.Stat("test/data.copy/case17/non-existing")
 	Expect(t, os.IsNotExist(err)).ToBe(true)
 
+	// existing, err not passed
+	var called bool
+	opt.OnErr = func(err error) error {
+		called = true
+		return err
+	}
+	err = Copy("test/data/case17", "test/data.copy/case17", opt)
+	Expect(t, err).ToBe(nil)
+	Expect(t, called).ToBe(false)
+
 	// not existing, process err
 	opt.OnErr = func(err error) error { return err }
 	err = Copy("test/data/case17/non-existing", "test/data.copy/case17/non-existing", opt)

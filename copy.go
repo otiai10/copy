@@ -242,6 +242,9 @@ func fclose(f *os.File, reported *error) {
 // onError lets caller to handle errors
 // occured when copying a file.
 func onError(err error, opt Options) error {
+	if err == nil {
+		return nil
+	}
 	if opt.OnErr == nil {
 		return err
 	}
