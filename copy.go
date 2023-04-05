@@ -65,6 +65,14 @@ func copyNextOrSkip(src, dest string, info os.FileInfo, opt Options) error {
 // with considering existence of parent directory
 // and file permission.
 func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
+	s, err := os.Open(src)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return
+	}
+	defer fclose(s, &err)
 
 	if err = os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
 		return
@@ -81,12 +89,6 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 		return err
 	}
 	chmodfunc(&err)
-
-	s, err := os.Open(src)
-	if err != nil {
-		return
-	}
-	defer fclose(s, &err)
 
 	var buf []byte = nil
 	var w io.Writer = f
@@ -146,6 +148,9 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 
 	contents, err := ioutil.ReadDir(srcdir)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
 		return
 	}
 
@@ -222,6 +227,9 @@ func onsymlink(src, dest string, opt Options) error {
 func lcopy(src, dest string) error {
 	src, err := os.Readlink(src)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
 		return err
 	}
 	return os.Symlink(src, dest)
