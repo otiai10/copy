@@ -17,7 +17,7 @@ jobs:
           - centos
     steps:
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: ${{ matrix.runtime }}
         shell: 'script -q -e -c "bash {0}"'
         run: bash ./test/run --build --run ${{ matrix.runtime }}
