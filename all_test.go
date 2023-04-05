@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
@@ -84,6 +85,48 @@ func TestCopy(t *testing.T) {
 		Expect(t, err).ToBe(nil)
 		Expect(t, info.Mode().Perm()).ToBe(os.FileMode(0o555))
 		err = os.Chmod(dest, 0o755)
+		Expect(t, err).ToBe(nil)
+	})
+	When(t, "file is deleted while copying", func(t *testing.T) {
+		src := t.TempDir()
+		dest := t.TempDir()
+
+		file := filepath.Join(src, "file")
+		f, err := os.Create(file)
+		Expect(t, err).ToBe(nil)
+		f.Close()
+
+		opt := Options{Skip: func(info os.FileInfo, src, dest string) (bool, error) {
+			os.Remove(src)
+			return false, nil
+		}}
+		err = Copy(src, dest, opt)
+		Expect(t, err).ToBe(nil)
+	})
+	When(t, "symlink is deleted while copying", func(t *testing.T) {
+		src := t.TempDir()
+		dest := t.TempDir()
+
+		Expect(t, os.Symlink(".", filepath.Join(src, "symlink"))).ToBe(nil)
+
+		opt := Options{Skip: func(info os.FileInfo, src, dest string) (bool, error) {
+			os.Remove(src)
+			return false, nil
+		}}
+		err = Copy(src, dest, opt)
+		Expect(t, err).ToBe(nil)
+	})
+	When(t, "directory is deleted while copying", func(t *testing.T) {
+		src := t.TempDir()
+		dest := t.TempDir()
+
+		Expect(t, os.Mkdir(filepath.Join(src, "dir"), 0755)).ToBe(nil)
+
+		opt := Options{Skip: func(info os.FileInfo, src, dest string) (bool, error) {
+			os.Remove(src)
+			return false, nil
+		}}
+		err = Copy(src, dest, opt)
 		Expect(t, err).ToBe(nil)
 	})
 }
