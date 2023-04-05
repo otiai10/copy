@@ -29,6 +29,7 @@ jobs:
       run: go test -v -cover -race -coverprofile=coverage -covermode=atomic
 
     - name: Upload coverage
+      if: github.event_name == 'push'
       uses: codecov/codecov-action@v3
       with:
         file: ./coverage
