@@ -19,7 +19,7 @@ func Copy(src, dest string, opts ...Options) error {
 	opt := assureOptions(src, dest, opts...)
 	info, err := os.Lstat(src)
 	if err != nil {
-		return onError(err, opt)
+		return onError(src, dest, err, opt)
 	}
 	return switchboard(src, dest, info, opt)
 }
@@ -27,12 +27,8 @@ func Copy(src, dest string, opts ...Options) error {
 // switchboard switches proper copy functions regarding file type, etc...
 // If there would be anything else here, add a case to this switchboard.
 func switchboard(src, dest string, info os.FileInfo, opt Options) (err error) {
-	defer func() {
-		err = onError(err, opt)
-	}()
-
 	if info.Mode()&os.ModeDevice != 0 && !opt.Specials {
-		return err
+		return onError(src, dest, err, opt)
 	}
 
 	switch {
@@ -46,7 +42,7 @@ func switchboard(src, dest string, info os.FileInfo, opt Options) (err error) {
 		err = fcopy(src, dest, info, opt)
 	}
 
-	return err
+	return onError(src, dest, err, opt)
 }
 
 // copyNextOrSkip decide if this src should be copied or not.
@@ -241,13 +237,10 @@ func fclose(f *os.File, reported *error) {
 
 // onError lets caller to handle errors
 // occured when copying a file.
-func onError(err error, opt Options) error {
-	if err == nil {
-		return nil
-	}
-	if opt.OnErr == nil {
+func onError(src, dest string, err error, opt Options) error {
+	if opt.OnError == nil {
 		return err
 	}
 
-	return opt.OnErr(err)
+	return opt.OnError(src, dest, err)
 }

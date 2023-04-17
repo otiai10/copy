@@ -364,7 +364,7 @@ func TestOptions_CopyRateLimit(t *testing.T) {
 
 func TestOptions_OnFileError(t *testing.T) {
 	opt := Options{
-		OnErr: nil,
+		OnError: nil,
 	}
 
 	// existing, process nromally
@@ -378,18 +378,15 @@ func TestOptions_OnFileError(t *testing.T) {
 	_, err = os.Stat("test/data.copy/case17/non-existing")
 	Expect(t, os.IsNotExist(err)).ToBe(true)
 
-	// existing, err not passed
-	var called bool
-	opt.OnErr = func(err error) error {
-		called = true
+	// existing, nil err not passed
+	opt.OnError = func(_, _ string, err error) error {
 		return err
 	}
 	err = Copy("test/data/case17", "test/data.copy/case17", opt)
 	Expect(t, err).ToBe(nil)
-	Expect(t, called).ToBe(false)
 
 	// not existing, process err
-	opt.OnErr = func(err error) error { return err }
+	opt.OnError = func(_, _ string, err error) error { return err }
 	err = Copy("test/data/case17/non-existing", "test/data.copy/case17/non-existing", opt)
 	Expect(t, os.IsNotExist(err)).ToBe(true)
 
@@ -397,7 +394,7 @@ func TestOptions_OnFileError(t *testing.T) {
 	Expect(t, os.IsNotExist(err)).ToBe(true)
 
 	// not existing, ignore err
-	opt.OnErr = func(err error) error { return nil }
+	opt.OnError = func(_, _ string, err error) error { return nil }
 	err = Copy("test/data/case17/non-existing", "test/data.copy/case17/non-existing", opt)
 	Expect(t, err).ToBe(nil)
 
