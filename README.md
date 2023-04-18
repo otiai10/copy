@@ -42,7 +42,7 @@ type Options struct {
 	OnDirExists func(src, dest string) DirExistsAction
 
 	// OnErr lets called decide whether or not to continue on particular copy error.
-	OnErr func(err error) error
+	OnError func(src, dest, string, err error) error
 
 	// Skip can specify which files should be skipped
 	Skip func(srcinfo os.FileInfo, src, dest string) (bool, error)
