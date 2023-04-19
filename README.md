@@ -41,6 +41,9 @@ type Options struct {
 	// OnDirExists can specify what to do when there is a directory already existing in destination.
 	OnDirExists func(src, dest string) DirExistsAction
 
+	// OnError can let users decide how to handle errors (e.g., you can suppress specific error).
+	OnError func(src, dest, string, err error) error
+
 	// Skip can specify which files should be skipped
 	Skip func(srcinfo os.FileInfo, src, dest string) (bool, error)
 

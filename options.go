@@ -14,6 +14,9 @@ type Options struct {
 	// OnDirExists can specify what to do when there is a directory already existing in destination.
 	OnDirExists func(src, dest string) DirExistsAction
 
+	// OnErr lets called decide whether or not to continue on particular copy error.
+	OnError func(src, dest string, err error) error
+
 	// Skip can specify which files should be skipped
 	Skip func(srcinfo os.FileInfo, src, dest string) (bool, error)
 
@@ -95,6 +98,7 @@ func getDefaultOptions(src, dest string) Options {
 			return Shallow // Do shallow copy
 		},
 		OnDirExists:       nil,                // Default behavior is "Merge".
+		OnError:           nil,                // Default is "accept error"
 		Skip:              nil,                // Do not skip anything
 		AddPermission:     0,                  // Add nothing
 		PermissionControl: PerservePermission, // Just preserve permission
