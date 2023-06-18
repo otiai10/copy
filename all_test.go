@@ -1,6 +1,7 @@
 package copy
 
 import (
+	"embed"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -14,6 +15,9 @@ import (
 	. "github.com/otiai10/mint"
 )
 
+//go:embed test/data/case18/assets
+var assets embed.FS
+
 func TestMain(m *testing.M) {
 	setup(m)
 	code := m.Run()
@@ -26,6 +30,8 @@ func teardown(m *testing.M) {
 	os.RemoveAll("test/data.copy")
 	os.RemoveAll("test/data.copyTime")
 	os.RemoveAll("test/owned-by-root") // Do not check the error ;)
+	Copy("test/data/case18/assets.backup", "test/data/case18/assets")
+	os.RemoveAll("test/data/case18/assets.backup")
 }
 
 func TestCopy(t *testing.T) {
@@ -394,7 +400,7 @@ func TestOptions_CopyRateLimit(t *testing.T) {
 		return
 	}
 
-	opt := Options{WrapReader: func(src *os.File) io.Reader {
+	opt := Options{WrapReader: func(src io.Reader) io.Reader {
 		return &SleepyReader{src, 1}
 	}}
 
@@ -445,8 +451,17 @@ func TestOptions_OnFileError(t *testing.T) {
 	Expect(t, os.IsNotExist(err)).ToBe(true)
 }
 
+func TestOptions_FS(t *testing.T) {
+	os.RemoveAll("test/data/case18/assets")
+	err := Copy("test/data/case18/assets", "test/data.copy/case18/assets", Options{
+		FS:                assets,
+		PermissionControl: AddPermission(200), // FIXME
+	})
+	Expect(t, err).ToBe(nil)
+}
+
 type SleepyReader struct {
-	src *os.File
+	src io.Reader
 	sec time.Duration
 }
 
