@@ -1,6 +1,7 @@
 package copy
 
 import (
+	"fmt"
 	"go.uber.org/multierr"
 	"io"
 	"io/fs"
@@ -21,15 +22,16 @@ type timespec struct {
 func Copy(src, dest string, opts ...Options) error {
 	opt := assureOptions(src, dest, opts...)
 
-	var numConcurrentCopies uint = 1
+	var numCopyWorkers uint = 1
 	if opt.Concurrency > 1 {
-		numConcurrentCopies = opt.Concurrency
+		numCopyWorkers = opt.Concurrency
 	}
+	fmt.Fprintf(os.Stdout, "numCopyWorkers = %d\n", numCopyWorkers)
 
 	inCh := make(chan workerInput)
-	outCh := make(chan workerOutput, numConcurrentCopies)
+	outCh := make(chan workerOutput, numCopyWorkers)
 	errCh := make(chan error)
-	go startWorkers(numConcurrentCopies, inCh, outCh)
+	go startWorkers(numCopyWorkers, inCh, outCh)
 	go processResults(outCh, errCh)
 
 	if opt.FS != nil {
