@@ -1,6 +1,7 @@
 package copy
 
 import (
+	"go.uber.org/multierr"
 	"io"
 	"io/fs"
 	"io/ioutil"
@@ -334,7 +335,7 @@ func worker(wg *sync.WaitGroup, inCh chan workerInput, outCh chan workerOutput) 
 func processResults(out chan workerOutput, result chan error) {
 	var err error
 	for o := range out {
-		err = o // FIXME: collect all
+		err = multierr.Append(err, o)
 	}
 	result <- err
 }
