@@ -21,9 +21,9 @@ type timespec struct {
 func Copy(src, dest string, opts ...Options) error {
 	opt := assureOptions(src, dest, opts...)
 
-	numConcurrentCopies := 1
-	if opt.Concurrency != nil {
-		numConcurrentCopies = opt.Concurrency()
+	var numConcurrentCopies uint = 1
+	if opt.Concurrency > 1 {
+		numConcurrentCopies = opt.Concurrency
 	}
 
 	inCh := make(chan workerInput)
@@ -315,9 +315,9 @@ type workerInput struct {
 
 type workerOutput error
 
-func startWorkers(numWorkers int, inCh chan workerInput, outCh chan workerOutput) {
+func startWorkers(numWorkers uint, inCh chan workerInput, outCh chan workerOutput) {
 	var wg sync.WaitGroup
-	for workerID := 0; workerID < numWorkers; workerID++ {
+	for workerID := uint(0); workerID < numWorkers; workerID++ {
 		wg.Add(1)
 		go worker(&wg, inCh, outCh)
 	}
