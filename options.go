@@ -65,6 +65,11 @@ type Options struct {
 	// e.g., You can use embed.FS to copy files from embedded filesystem.
 	FS fs.FS
 
+	// If given, returns the number of workers to use to concurrently perform
+	// the copying operation. It the returned value is <= 1, a value of 1 is
+	// used and copying will proceed serially.
+	Concurrency func() int
+
 	intent struct {
 		src  string
 		dest string

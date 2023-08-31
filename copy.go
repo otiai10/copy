@@ -18,14 +18,19 @@ type timespec struct {
 
 // Copy copies src to dest, doesn't matter if src is a directory or a file.
 func Copy(src, dest string, opts ...Options) error {
-	numConcurrentCopies := 10 // TODO: make configurable via opts
+	opt := assureOptions(src, dest, opts...)
+
+	numConcurrentCopies := 1
+	if opt.Concurrency != nil {
+		numConcurrentCopies = opt.Concurrency()
+	}
+
 	inCh := make(chan workerInput)
 	outCh := make(chan workerOutput)
 	errCh := make(chan error)
 	go startWorkers(numConcurrentCopies, inCh, outCh)
 	go processResults(outCh, errCh)
 
-	opt := assureOptions(src, dest, opts...)
 	if opt.FS != nil {
 		info, err := fs.Stat(opt.FS, src)
 		if err != nil {
