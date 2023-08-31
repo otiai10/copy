@@ -26,7 +26,7 @@ func Copy(src, dest string, opts ...Options) error {
 		numConcurrentCopies = opt.Concurrency
 	}
 
-	inCh := make(chan workerInput, numConcurrentCopies)
+	inCh := make(chan workerInput)
 	outCh := make(chan workerOutput, numConcurrentCopies)
 	errCh := make(chan error)
 	go startWorkers(numConcurrentCopies, inCh, outCh)
