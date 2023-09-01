@@ -24,7 +24,7 @@ func Copy(src, dest string, opts ...Options) error {
 
 	var numCopyWorkers uint = 1
 	if opt.Concurrency > 1 {
-		numCopyWorkers = opt.Concurrency * 10
+		numCopyWorkers = opt.Concurrency * 100
 	}
 	fmt.Fprintf(os.Stdout, "numCopyWorkers = %d\n", numCopyWorkers)
 
