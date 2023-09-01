@@ -1,7 +1,6 @@
 package copy
 
 import (
-	"fmt"
 	"go.uber.org/multierr"
 	"io"
 	"io/fs"
@@ -26,7 +25,6 @@ func Copy(src, dest string, opts ...Options) error {
 	if opt.Concurrency > 1 {
 		numCopyWorkers = opt.Concurrency
 	}
-	fmt.Fprintf(os.Stdout, "numCopyWorkers = %d\n", numCopyWorkers)
 
 	inCh := make(chan workerInput, numCopyWorkers)
 	outCh := make(chan workerOutput, numCopyWorkers)
