@@ -28,7 +28,7 @@ func Copy(src, dest string, opts ...Options) error {
 	}
 	fmt.Fprintf(os.Stdout, "numCopyWorkers = %d\n", numCopyWorkers)
 
-	inCh := make(chan workerInput, numCopyWorkers*10)
+	inCh := make(chan workerInput, numCopyWorkers)
 	outCh := make(chan workerOutput, numCopyWorkers*10)
 	errCh := make(chan error)
 	go startWorkers(numCopyWorkers, inCh, outCh)
