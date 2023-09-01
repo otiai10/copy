@@ -29,7 +29,7 @@ func Copy(src, dest string, opts ...Options) error {
 	fmt.Fprintf(os.Stdout, "numCopyWorkers = %d\n", numCopyWorkers)
 
 	inCh := make(chan workerInput, numCopyWorkers*100)
-	outCh := make(chan workerOutput, numCopyWorkers*10)
+	outCh := make(chan workerOutput, numCopyWorkers*1000)
 	errCh := make(chan error)
 	go startWorkers(numCopyWorkers, inCh, outCh)
 	go processResults(outCh, errCh)
