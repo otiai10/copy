@@ -1,12 +1,15 @@
 package copy
 
 import (
+	"context"
 	"io"
 	"io/fs"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
+
+	"golang.org/x/sync/semaphore"
 )
 
 type timespec struct {
@@ -18,6 +21,10 @@ type timespec struct {
 // Copy copies src to dest, doesn't matter if src is a directory or a file.
 func Copy(src, dest string, opts ...Options) error {
 	opt := assureOptions(src, dest, opts...)
+	if opt.NumberOfWorkers > 1 {
+		opt.intent.sem = semaphore.NewWeighted(opt.NumberOfWorkers)
+		opt.intent.ctx = context.Background()
+	}
 	if opt.FS != nil {
 		info, err := fs.Stat(opt.FS, src)
 		if err != nil {
