@@ -1,13 +1,11 @@
 package copy
 
 import (
-	"go.uber.org/multierr"
 	"io"
 	"io/fs"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 )
 
@@ -20,57 +18,36 @@ type timespec struct {
 // Copy copies src to dest, doesn't matter if src is a directory or a file.
 func Copy(src, dest string, opts ...Options) error {
 	opt := assureOptions(src, dest, opts...)
-
-	var numCopyWorkers uint = 1
-	if opt.Concurrency > 1 {
-		numCopyWorkers = opt.Concurrency
-	}
-
-	inCh := make(chan workerInput, numCopyWorkers)
-	outCh := make(chan workerOutput, numCopyWorkers)
-	errCh := make(chan error)
-	go startWorkers(numCopyWorkers, inCh, outCh)
-	go processResults(outCh, errCh)
-
 	if opt.FS != nil {
 		info, err := fs.Stat(opt.FS, src)
 		if err != nil {
 			return onError(src, dest, err, opt)
 		}
-		return switchboard(src, dest, info, opt, inCh)
+		return switchboard(src, dest, info, opt)
 	}
 	info, err := os.Lstat(src)
 	if err != nil {
 		return onError(src, dest, err, opt)
 	}
-
-	err = switchboard(src, dest, info, opt, inCh)
-	if err != nil {
-		close(inCh)
-		close(outCh)
-		return err
-	}
-	close(inCh)
-
-	return <-errCh
+	return switchboard(src, dest, info, opt)
 }
 
 // switchboard switches proper copy functions regarding file type, etc...
 // If there would be anything else here, add a case to this switchboard.
-func switchboard(src, dest string, info os.FileInfo, opt Options, inCh chan workerInput) (err error) {
+func switchboard(src, dest string, info os.FileInfo, opt Options) (err error) {
 	if info.Mode()&os.ModeDevice != 0 && !opt.Specials {
 		return onError(src, dest, err, opt)
 	}
 
 	switch {
 	case info.Mode()&os.ModeSymlink != 0:
-		err = onsymlink(src, dest, opt, inCh)
+		err = onsymlink(src, dest, opt)
 	case info.IsDir():
-		err = dcopy(src, dest, info, opt, inCh)
+		err = dcopy(src, dest, info, opt)
 	case info.Mode()&os.ModeNamedPipe != 0:
 		err = pcopy(dest, info)
 	default:
-		inCh <- workerInput{src, dest, info, opt}
+		err = fcopy(src, dest, info, opt)
 	}
 
 	return onError(src, dest, err, opt)
@@ -79,7 +56,7 @@ func switchboard(src, dest string, info os.FileInfo, opt Options, inCh chan work
 // copyNextOrSkip decide if this src should be copied or not.
 // Because this "copy" could be called recursively,
 // "info" MUST be given here, NOT nil.
-func copyNextOrSkip(src, dest string, info os.FileInfo, opt Options, inCh chan workerInput) error {
+func copyNextOrSkip(src, dest string, info os.FileInfo, opt Options) error {
 	if opt.Skip != nil {
 		skip, err := opt.Skip(info, src, dest)
 		if err != nil {
@@ -89,7 +66,7 @@ func copyNextOrSkip(src, dest string, info os.FileInfo, opt Options, inCh chan w
 			return nil
 		}
 	}
-	return switchboard(src, dest, info, opt, inCh)
+	return switchboard(src, dest, info, opt)
 }
 
 // fcopy is for just a file,
@@ -168,7 +145,7 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 // dcopy is for a directory,
 // with scanning contents inside the directory
 // and pass everything to "copy" recursively.
-func dcopy(srcdir, destdir string, info os.FileInfo, opt Options, inCh chan workerInput) (err error) {
+func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 	if skip, err := onDirExists(opt, srcdir, destdir); err != nil {
 		return err
 	} else if skip {
@@ -209,7 +186,7 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options, inCh chan work
 	for _, content := range contents {
 		cs, cd := filepath.Join(srcdir, content.Name()), filepath.Join(destdir, content.Name())
 
-		if err = copyNextOrSkip(cs, cd, content, opt, inCh); err != nil {
+		if err = copyNextOrSkip(cs, cd, content, opt); err != nil {
 			// If any error, exit immediately
 			return
 		}
@@ -247,7 +224,7 @@ func onDirExists(opt Options, srcdir, destdir string) (bool, error) {
 	return false, nil
 }
 
-func onsymlink(src, dest string, opt Options, inCh chan workerInput) error {
+func onsymlink(src, dest string, opt Options) error {
 	switch opt.OnSymlink(src) {
 	case Shallow:
 		if err := lcopy(src, dest); err != nil {
@@ -266,7 +243,7 @@ func onsymlink(src, dest string, opt Options, inCh chan workerInput) error {
 		if err != nil {
 			return err
 		}
-		return copyNextOrSkip(orig, dest, info, opt, inCh)
+		return copyNextOrSkip(orig, dest, info, opt)
 	case Skip:
 		fallthrough
 	default:
@@ -304,38 +281,4 @@ func onError(src, dest string, err error, opt Options) error {
 	}
 
 	return opt.OnError(src, dest, err)
-}
-
-type workerInput struct {
-	src  string
-	dest string
-	info os.FileInfo
-	opt  Options
-}
-
-type workerOutput error
-
-func startWorkers(numWorkers uint, inCh chan workerInput, outCh chan workerOutput) {
-	var wg sync.WaitGroup
-	for workerID := uint(0); workerID < numWorkers; workerID++ {
-		wg.Add(1)
-		go worker(&wg, inCh, outCh)
-	}
-	wg.Wait()
-	close(outCh)
-}
-
-func worker(wg *sync.WaitGroup, inCh chan workerInput, outCh chan workerOutput) {
-	for i := range inCh {
-		outCh <- fcopy(i.src, i.dest, i.info, i.opt)
-	}
-	wg.Done()
-}
-
-func processResults(out chan workerOutput, result chan error) {
-	var err error
-	for o := range out {
-		err = multierr.Append(err, o)
-	}
-	result <- err
 }
