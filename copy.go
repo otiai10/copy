@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -190,12 +191,15 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 		return
 	}
 
-	for _, content := range contents {
-		cs, cd := filepath.Join(srcdir, content.Name()), filepath.Join(destdir, content.Name())
-
-		if err = copyNextOrSkip(cs, cd, content, opt); err != nil {
-			// If any error, exit immediately
-			return
+	if yes, err := shouldCopyDirectoryConcurrent(opt, srcdir, destdir); err != nil {
+		return err
+	} else if yes {
+		if err := dcopyConcurrent(srcdir, destdir, contents, opt); err != nil {
+			return err
+		}
+	} else {
+		if err := dcopySequential(srcdir, destdir, contents, opt); err != nil {
+			return err
 		}
 	}
 
@@ -212,6 +216,52 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 	}
 
 	return
+}
+
+func dcopySequential(srcdir, destdir string, contents []os.FileInfo, opt Options) error {
+	for _, content := range contents {
+		cs, cd := filepath.Join(srcdir, content.Name()), filepath.Join(destdir, content.Name())
+
+		if err := copyNextOrSkip(cs, cd, content, opt); err != nil {
+			// If any error, exit immediately
+			return err
+		}
+	}
+	return nil
+}
+
+// Copy this directory concurrently regarding semaphore of opt.intent
+func dcopyConcurrent(srcdir, destdir string, contents []os.FileInfo, opt Options) error {
+	group, ctx := errgroup.WithContext(opt.intent.ctx)
+	cancelctx, cancel := context.WithCancel(ctx)
+	getDcopyRoutine := func(cs, cd string, content os.FileInfo) func() error {
+		return func() error {
+			select {
+			case <-cancelctx.Done():
+				return nil
+			case <-opt.intent.ctx.Done():
+				return nil
+			default:
+				if err := opt.intent.sem.Acquire(cancelctx, 1); err != nil {
+					cancel()
+					return err
+				}
+				err := copyNextOrSkip(cs, cd, content, opt)
+				opt.intent.sem.Release(1)
+				if err != nil {
+					cancel()
+					return err
+				}
+				return nil
+			}
+		}
+	}
+	for _, content := range contents {
+		csd := filepath.Join(srcdir, content.Name())
+		cdd := filepath.Join(destdir, content.Name())
+		group.Go(getDcopyRoutine(csd, cdd, content))
+	}
+	return group.Wait()
 }
 
 func onDirExists(opt Options, srcdir, destdir string) (bool, error) {
