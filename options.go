@@ -2,6 +2,7 @@ package copy
 
 import (
 	"io"
+	"io/fs"
 	"os"
 )
 
@@ -13,6 +14,9 @@ type Options struct {
 
 	// OnDirExists can specify what to do when there is a directory already existing in destination.
 	OnDirExists func(src, dest string) DirExistsAction
+
+	// OnErr lets called decide whether or not to continue on particular copy error.
+	OnError func(src, dest string, err error) error
 
 	// Skip can specify which files should be skipped
 	Skip func(srcinfo os.FileInfo, src, dest string) (bool, error)
@@ -55,7 +59,11 @@ type Options struct {
 	// If you want to add some limitation on reading src file,
 	// you can wrap the src and provide new reader,
 	// such as `RateLimitReader` in the test case.
-	WrapReader func(src *os.File) io.Reader
+	WrapReader func(src io.Reader) io.Reader
+
+	// If given, copy.Copy refers to this fs.FS instead of the OS filesystem.
+	// e.g., You can use embed.FS to copy files from embedded filesystem.
+	FS fs.FS
 
 	intent struct {
 		src  string
@@ -95,6 +103,7 @@ func getDefaultOptions(src, dest string) Options {
 			return Shallow // Do shallow copy
 		},
 		OnDirExists:       nil,                // Default behavior is "Merge".
+		OnError:           nil,                // Default is "accept error"
 		Skip:              nil,                // Do not skip anything
 		AddPermission:     0,                  // Add nothing
 		PermissionControl: PerservePermission, // Just preserve permission

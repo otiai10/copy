@@ -1,10 +1,12 @@
 package copy
 
 import (
+	"embed"
 	"errors"
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
@@ -12,6 +14,9 @@ import (
 
 	. "github.com/otiai10/mint"
 )
+
+//go:embed test/data/case18/assets
+var assets embed.FS
 
 func TestMain(m *testing.M) {
 	setup(m)
@@ -26,6 +31,8 @@ func teardown(m *testing.M) {
 	os.RemoveAll("test/data.copy")
 	os.RemoveAll("test/data.copyTime")
 	os.RemoveAll("test/owned-by-root") // Do not check the error ;)
+	Copy("test/data/case18/assets.backup", "test/data/case18/assets")
+	os.RemoveAll("test/data/case18/assets.backup")
 }
 
 func TestCopy(t *testing.T) {
@@ -85,6 +92,48 @@ func TestCopy(t *testing.T) {
 		Expect(t, err).ToBe(nil)
 		Expect(t, info.Mode().Perm()).ToBe(os.FileMode(0o555))
 		err = os.Chmod(dest, 0o755)
+		Expect(t, err).ToBe(nil)
+	})
+	When(t, "file is deleted while copying", func(t *testing.T) {
+		src := t.TempDir()
+		dest := t.TempDir()
+
+		file := filepath.Join(src, "file")
+		f, err := os.Create(file)
+		Expect(t, err).ToBe(nil)
+		f.Close()
+
+		opt := Options{Skip: func(info os.FileInfo, src, dest string) (bool, error) {
+			os.Remove(src)
+			return false, nil
+		}}
+		err = Copy(src, dest, opt)
+		Expect(t, err).ToBe(nil)
+	})
+	When(t, "symlink is deleted while copying", func(t *testing.T) {
+		src := t.TempDir()
+		dest := t.TempDir()
+
+		Expect(t, os.Symlink(".", filepath.Join(src, "symlink"))).ToBe(nil)
+
+		opt := Options{Skip: func(info os.FileInfo, src, dest string) (bool, error) {
+			os.Remove(src)
+			return false, nil
+		}}
+		err = Copy(src, dest, opt)
+		Expect(t, err).ToBe(nil)
+	})
+	When(t, "directory is deleted while copying", func(t *testing.T) {
+		src := t.TempDir()
+		dest := t.TempDir()
+
+		Expect(t, os.Mkdir(filepath.Join(src, "dir"), 0755)).ToBe(nil)
+
+		opt := Options{Skip: func(info os.FileInfo, src, dest string) (bool, error) {
+			os.Remove(src)
+			return false, nil
+		}}
+		err = Copy(src, dest, opt)
 		Expect(t, err).ToBe(nil)
 	})
 }
@@ -355,7 +404,7 @@ func TestOptions_CopyRateLimit(t *testing.T) {
 		return
 	}
 
-	opt := Options{WrapReader: func(src *os.File) io.Reader {
+	opt := Options{WrapReader: func(src io.Reader) io.Reader {
 		return &SleepyReader{src, 1}
 	}}
 
@@ -366,8 +415,57 @@ func TestOptions_CopyRateLimit(t *testing.T) {
 	Expect(t, elapsed > 5*time.Second).ToBe(true)
 }
 
+func TestOptions_OnFileError(t *testing.T) {
+	opt := Options{
+		OnError: nil,
+	}
+
+	// existing, process nromally
+	err := Copy("test/data/case17", "test/data.copy/case17", opt)
+	Expect(t, err).ToBe(nil)
+
+	// not existing, process err
+	err = Copy("test/data/case17/non-existing", "test/data.copy/case17/non-existing", opt)
+	Expect(t, os.IsNotExist(err)).ToBe(true)
+
+	_, err = os.Stat("test/data.copy/case17/non-existing")
+	Expect(t, os.IsNotExist(err)).ToBe(true)
+
+	// existing, nil err not passed
+	opt.OnError = func(_, _ string, err error) error {
+		return err
+	}
+	err = Copy("test/data/case17", "test/data.copy/case17", opt)
+	Expect(t, err).ToBe(nil)
+
+	// not existing, process err
+	opt.OnError = func(_, _ string, err error) error { return err }
+	err = Copy("test/data/case17/non-existing", "test/data.copy/case17/non-existing", opt)
+	Expect(t, os.IsNotExist(err)).ToBe(true)
+
+	_, err = os.Stat("test/data.copy/case17/non-existing")
+	Expect(t, os.IsNotExist(err)).ToBe(true)
+
+	// not existing, ignore err
+	opt.OnError = func(_, _ string, err error) error { return nil }
+	err = Copy("test/data/case17/non-existing", "test/data.copy/case17/non-existing", opt)
+	Expect(t, err).ToBe(nil)
+
+	_, err = os.Stat("test/data.copy/case17/non-existing")
+	Expect(t, os.IsNotExist(err)).ToBe(true)
+}
+
+func TestOptions_FS(t *testing.T) {
+	os.RemoveAll("test/data/case18/assets")
+	err := Copy("test/data/case18/assets", "test/data.copy/case18/assets", Options{
+		FS:                assets,
+		PermissionControl: AddPermission(200), // FIXME
+	})
+	Expect(t, err).ToBe(nil)
+}
+
 type SleepyReader struct {
-	src *os.File
+	src io.Reader
 	sec time.Duration
 }
 

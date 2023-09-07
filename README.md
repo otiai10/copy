@@ -41,6 +41,9 @@ type Options struct {
 	// OnDirExists can specify what to do when there is a directory already existing in destination.
 	OnDirExists func(src, dest string) DirExistsAction
 
+	// OnError can let users decide how to handle errors (e.g., you can suppress specific error).
+	OnError func(src, dest, string, err error) error
+
 	// Skip can specify which files should be skipped
 	Skip func(srcinfo os.FileInfo, src, dest string) (bool, error)
 
@@ -74,6 +77,15 @@ type Options struct {
 	// If zero, the internal default buffer of 32KB is used.
 	// See https://golang.org/pkg/io/#CopyBuffer for more information.
 	CopyBufferSize uint
+
+	// If you want to add some limitation on reading src file,
+	// you can wrap the src and provide new reader,
+	// such as `RateLimitReader` in the test case.
+	WrapReader func(src io.Reader) io.Reader
+
+	// If given, copy.Copy refers to this fs.FS instead of the OS filesystem.
+	// e.g., You can use embed.FS to copy files from embedded filesystem.
+	FS fs.FS
 }
 ```
 
