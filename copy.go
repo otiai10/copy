@@ -242,6 +242,9 @@ func dcopyConcurrent(srcdir, destdir string, contents []os.FileInfo, opt Options
 			case <-opt.intent.ctx.Done():
 				return nil
 			default:
+				if content.IsDir() {
+					return copyNextOrSkip(cs, cd, content, opt)
+				}
 				if err := opt.intent.sem.Acquire(cancelctx, 1); err != nil {
 					cancel()
 					return err
