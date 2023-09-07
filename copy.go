@@ -243,10 +243,7 @@ func dcopyConcurrent(srcdir, destdir string, contents []os.FileInfo, opt Options
 			}
 			err := copyNextOrSkip(cs, cd, content, opt)
 			opt.intent.sem.Release(1)
-			if err != nil {
-				return err
-			}
-			return nil
+			return err
 		}
 	}
 	for _, content := range contents {
