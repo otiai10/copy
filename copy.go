@@ -233,36 +233,26 @@ func dcopySequential(srcdir, destdir string, contents []os.FileInfo, opt Options
 // Copy this directory concurrently regarding semaphore of opt.intent
 func dcopyConcurrent(srcdir, destdir string, contents []os.FileInfo, opt Options) error {
 	group, ctx := errgroup.WithContext(opt.intent.ctx)
-	cancelctx, cancel := context.WithCancel(ctx)
-	getDcopyRoutine := func(cs, cd string, content os.FileInfo) func() error {
+	getRoutine := func(cs, cd string, content os.FileInfo) func() error {
 		return func() error {
-			select {
-			case <-cancelctx.Done():
-				return nil
-			case <-opt.intent.ctx.Done():
-				return nil
-			default:
-				if content.IsDir() {
-					return copyNextOrSkip(cs, cd, content, opt)
-				}
-				if err := opt.intent.sem.Acquire(cancelctx, 1); err != nil {
-					cancel()
-					return err
-				}
-				err := copyNextOrSkip(cs, cd, content, opt)
-				opt.intent.sem.Release(1)
-				if err != nil {
-					cancel()
-					return err
-				}
-				return nil
+			if content.IsDir() {
+				return copyNextOrSkip(cs, cd, content, opt)
 			}
+			if err := opt.intent.sem.Acquire(ctx, 1); err != nil {
+				return err
+			}
+			err := copyNextOrSkip(cs, cd, content, opt)
+			opt.intent.sem.Release(1)
+			if err != nil {
+				return err
+			}
+			return nil
 		}
 	}
 	for _, content := range contents {
 		csd := filepath.Join(srcdir, content.Name())
 		cdd := filepath.Join(destdir, content.Name())
-		group.Go(getDcopyRoutine(csd, cdd, content))
+		group.Go(getRoutine(csd, cdd, content))
 	}
 	return group.Wait()
 }
