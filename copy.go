@@ -22,8 +22,8 @@ type timespec struct {
 // Copy copies src to dest, doesn't matter if src is a directory or a file.
 func Copy(src, dest string, opts ...Options) error {
 	opt := assureOptions(src, dest, opts...)
-	if opt.NumberOfWorkers > 1 {
-		opt.intent.sem = semaphore.NewWeighted(opt.NumberOfWorkers)
+	if opt.NumOfWorkers > 1 {
+		opt.intent.sem = semaphore.NewWeighted(opt.NumOfWorkers)
 		opt.intent.ctx = context.Background()
 	}
 	if opt.FS != nil {

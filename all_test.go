@@ -476,14 +476,14 @@ func (r *SleepyReader) Read(p []byte) (int, error) {
 	return n, e
 }
 
-func TestOptions_NumberOfWorkers(t *testing.T) {
-	opt := Options{NumberOfWorkers: 3}
+func TestOptions_NumOfWorkers(t *testing.T) {
+	opt := Options{NumOfWorkers: 3}
 	err := Copy("test/data/case19", "test/data.copy/case19", opt)
 	Expect(t, err).ToBe(nil)
 }
 
 func TestOptions_PreferConcurrent(t *testing.T) {
-	opt := Options{NumberOfWorkers: 4, PreferConcurrent: func(sd, dd string) (bool, error) {
+	opt := Options{NumOfWorkers: 4, PreferConcurrent: func(sd, dd string) (bool, error) {
 		return strings.HasSuffix(sd, "concurrent"), nil
 	}}
 	err := Copy("test/data/case19", "test/data.copy/case19_preferconcurrent", opt)
