@@ -16,7 +16,6 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         go: ['1.18', '1.19', '1.20']
     steps:
-
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
@@ -34,3 +33,21 @@ jobs:
 
     - name: Test
       run: go test -v --tags=go${{ matrix.go }}
+  benchmark:
+    name: Benchmark
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: ['1.21']
+    steps:
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ matrix.go }}
+      id: go
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v3
+    - name: Get dependencies
+      run: go get -v -t -d ./...
+    - name: Benchmark
+      run: go test -bench . -benchmem -benchtime 8s
