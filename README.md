@@ -44,7 +44,7 @@ type Options struct {
 	// OnError can let users decide how to handle errors (e.g., you can suppress specific error).
 	OnError func(src, dest, string, err error) error
 
-    // OnNameMatch returns new destination file name
+    	// OnNameMatch returns new destination file name
 	// when source file name matches the specified pattern
 	// that has been parsed by NameRegexp
 	OnNameMatch func(re *regexp.Regexp, src string) string
@@ -98,7 +98,7 @@ type Options struct {
 	// Please refer to https://pkg.go.dev/golang.org/x/sync/semaphore for more details.
 	NumOfWorkers int64
 
-    // NameRegexp is used for matching source file name.
+    	// NameRegexp is used for matching source file name.
 	NameRegexp *regexp.Regexp
 
 	// PreferConcurrent is a function to determine whether or not
