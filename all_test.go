@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"testing"
@@ -487,5 +488,14 @@ func TestOptions_PreferConcurrent(t *testing.T) {
 		return strings.HasSuffix(sd, "concurrent"), nil
 	}}
 	err := Copy("test/data/case19", "test/data.copy/case19_preferconcurrent", opt)
+	Expect(t, err).ToBe(nil)
+}
+
+func TestOptions_OnNameMatch(t *testing.T) {
+	re := regexp.MustCompile(`(?m)(\.stub)$`)
+	opt := Options{NameRegexp: re, OnNameMatch: func(re *regexp.Regexp, src string) string {
+		return re.ReplaceAllString(src, "")
+	}}
+	err := Copy("test/data/case20", "test/data.copy/case20", opt)
 	Expect(t, err).ToBe(nil)
 }
