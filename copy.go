@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -167,28 +166,29 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 	}
 	defer chmodfunc(&err)
 
-	var contents []os.FileInfo
+	var entries []fs.DirEntry
 	if opt.FS != nil {
-		entries, err := fs.ReadDir(opt.FS, srcdir)
+		entries, err = fs.ReadDir(opt.FS, srcdir)
 		if err != nil {
 			return err
 		}
-		for _, e := range entries {
-			info, err := e.Info()
-			if err != nil {
-				return err
-			}
-			contents = append(contents, info)
-		}
 	} else {
-		contents, err = ioutil.ReadDir(srcdir)
+		entries, err = os.ReadDir(srcdir)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return nil
+			}
+			return err
+		}
 	}
 
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil
+	contents := make([]fs.FileInfo, 0, len(entries))
+	for _, e := range entries {
+		info, err := e.Info()
+		if err != nil {
+			return err
 		}
-		return
+		contents = append(contents, info)
 	}
 
 	if yes, err := shouldCopyDirectoryConcurrent(opt, srcdir, destdir); err != nil {
