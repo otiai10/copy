@@ -4,7 +4,6 @@ import (
 	"embed"
 	"errors"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -240,7 +239,7 @@ func TestOptions_Skip(t *testing.T) {
 		}}
 		err := Copy("test/data/case06", "test/data.copy/case06.01", opt)
 		Expect(t, err).ToBe(errInsideSkipFunc)
-		files, err := ioutil.ReadDir("./test/data.copy/case06.01")
+		files, err := os.ReadDir("./test/data.copy/case06.01")
 		Expect(t, err).ToBe(nil)
 		Expect(t, len(files)).ToBe(0)
 	})
@@ -326,7 +325,7 @@ func TestOptions_OnDirExists(t *testing.T) {
 	Expect(t, err).ToBe(nil)
 	err = Copy("test/data/case10/src", "test/data.copy/case10/dest.1", opt)
 	Expect(t, err).ToBe(nil)
-	b, err := ioutil.ReadFile("test/data.copy/case10/dest.1/" + "foo/" + "text_aaa")
+	b, err := os.ReadFile("test/data.copy/case10/dest.1/" + "foo/" + "text_aaa")
 	Expect(t, err).ToBe(nil)
 	Expect(t, string(b)).ToBe("This is text_aaa from src")
 	stat, err := os.Stat("test/data.copy/case10/dest.1/foo/text_eee")
@@ -340,7 +339,7 @@ func TestOptions_OnDirExists(t *testing.T) {
 	Expect(t, err).ToBe(nil)
 	err = Copy("test/data/case10/src", "test/data.copy/case10/dest.2", opt)
 	Expect(t, err).ToBe(nil)
-	b, err = ioutil.ReadFile("test/data.copy/case10/dest.2/" + "foo/" + "text_aaa")
+	b, err = os.ReadFile("test/data.copy/case10/dest.2/" + "foo/" + "text_aaa")
 	Expect(t, err).ToBe(nil)
 	Expect(t, string(b)).ToBe("This is text_aaa from src")
 	stat, err = os.Stat("test/data.copy/case10/dest.2/foo/text_eee")
@@ -352,7 +351,7 @@ func TestOptions_OnDirExists(t *testing.T) {
 	}
 	err = Copy("test/data/case10/src", "test/data.copy/case10/dest.3", opt)
 	Expect(t, err).ToBe(nil)
-	b, err = ioutil.ReadFile("test/data.copy/case10/dest.3/" + "foo/" + "text_aaa")
+	b, err = os.ReadFile("test/data.copy/case10/dest.3/" + "foo/" + "text_aaa")
 	Expect(t, err).ToBe(nil)
 	Expect(t, string(b)).ToBe("This is text_aaa from dest")
 
@@ -374,7 +373,7 @@ func TestOptions_CopyBufferSize(t *testing.T) {
 	err := Copy("test/data/case12", "test/data.copy/case12", opt)
 	Expect(t, err).ToBe(nil)
 
-	content, err := ioutil.ReadFile("test/data.copy/case12/README.md")
+	content, err := os.ReadFile("test/data.copy/case12/README.md")
 	Expect(t, err).ToBe(nil)
 	Expect(t, string(content)).ToBe("case12 - README.md")
 }
