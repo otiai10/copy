@@ -416,7 +416,7 @@ func TestOptions_OnFileError(t *testing.T) {
 		OnError: nil,
 	}
 
-	// existing, process nromally
+	// existing, process normally
 	err := Copy("test/data/case17", "test/data.copy/case17", opt)
 	Expect(t, err).ToBe(nil)
 

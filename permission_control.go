@@ -39,7 +39,7 @@ var (
 )
 
 // chmod ANYHOW changes file mode,
-// with asiging error raised during Chmod,
+// with assigning error raised during Chmod,
 // BUT respecting the error already reported.
 func chmod(dir string, mode os.FileMode, reported *error) {
 	if err := os.Chmod(dir, mode); *reported == nil {
