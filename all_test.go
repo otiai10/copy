@@ -50,7 +50,7 @@ func TestCopy(t *testing.T) {
 	When(t, "specified src is just a file", func(t *testing.T) {
 		err := Copy("test/data/case01/README.md", "test/data.copy/case01/README.md")
 		Expect(t, err).ToBe(nil)
-		content, err := ioutil.ReadFile("test/data.copy/case01/README.md")
+		content, err := os.ReadFile("test/data.copy/case01/README.md")
 		Expect(t, err).ToBe(nil)
 		Expect(t, string(content)).ToBe("case01 - README.md")
 	})
