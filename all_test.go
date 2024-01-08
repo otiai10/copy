@@ -51,7 +51,7 @@ func TestCopy(t *testing.T) {
 	When(t, "specified src is just a file", func(t *testing.T) {
 		err := Copy("test/data/case01/README.md", "test/data.copy/case01/README.md")
 		Expect(t, err).ToBe(nil)
-		content, err := ioutil.ReadFile("test/data.copy/case01/README.md")
+		content, err := os.ReadFile("test/data.copy/case01/README.md")
 		Expect(t, err).ToBe(nil)
 		Expect(t, string(content)).ToBe("case01 - README.md")
 	})
@@ -440,4 +440,18 @@ func (r *SleepyReader) Read(p []byte) (int, error) {
 		time.Sleep(time.Second * r.sec)
 	}
 	return n, e
+}
+
+func TestOptions_NumOfWorkers(t *testing.T) {
+	opt := Options{NumOfWorkers: 3}
+	err := Copy("test/data/case19", "test/data.copy/case19", opt)
+	Expect(t, err).ToBe(nil)
+}
+
+func TestOptions_PreferConcurrent(t *testing.T) {
+	opt := Options{NumOfWorkers: 4, PreferConcurrent: func(sd, dd string) (bool, error) {
+		return strings.HasSuffix(sd, "concurrent"), nil
+	}}
+	err := Copy("test/data/case19", "test/data.copy/case19_preferconcurrent", opt)
+	Expect(t, err).ToBe(nil)
 }
