@@ -1,12 +1,9 @@
-//go:build go1.16
-// +build go1.16
-
 package copy
 
 import "io/fs"
 
-// This is a cloned definition of os.FileInfo (go1.15) or fs.FileInfo (go1.16~)
 // A FileInfo describes a file and is returned by Stat.
+// This is a cloned definition of fs.FileInfo (go1.16~).
 type fileInfo interface {
 	// Name() string       // base name of the file
 	// Size() int64        // length in bytes for regular files; system-dependent for others
