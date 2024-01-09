@@ -1,6 +1,7 @@
 package copy
 
 import (
+	"io/fs"
 	"os"
 )
 
@@ -11,11 +12,11 @@ const (
 	tmpPermissionForDirectory = os.FileMode(0755)
 )
 
-type PermissionControlFunc func(srcinfo fileInfo, dest string) (chmodfunc func(*error), err error)
+type PermissionControlFunc func(srcinfo fs.FileInfo, dest string) (chmodfunc func(*error), err error)
 
 var (
 	AddPermission = func(perm os.FileMode) PermissionControlFunc {
-		return func(srcinfo fileInfo, dest string) (func(*error), error) {
+		return func(srcinfo fs.FileInfo, dest string) (func(*error), error) {
 			orig := srcinfo.Mode()
 			if srcinfo.IsDir() {
 				if err := os.MkdirAll(dest, tmpPermissionForDirectory); err != nil {
@@ -28,7 +29,7 @@ var (
 		}
 	}
 	PerservePermission PermissionControlFunc = AddPermission(0)
-	DoNothing          PermissionControlFunc = func(srcinfo fileInfo, dest string) (func(*error), error) {
+	DoNothing          PermissionControlFunc = func(srcinfo fs.FileInfo, dest string) (func(*error), error) {
 		if srcinfo.IsDir() {
 			if err := os.MkdirAll(dest, srcinfo.Mode()); err != nil {
 				return func(*error) {}, err
