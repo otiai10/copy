@@ -317,7 +317,7 @@ func lcopy(src, dest string) error {
 }
 
 // fclose ANYHOW closes file,
-// with asiging error raised during Close,
+// with assigning error raised during Close,
 // BUT respecting the error already reported.
 func fclose(f io.Closer, reported *error) {
 	if err := f.Close(); *reported == nil {
@@ -326,7 +326,7 @@ func fclose(f io.Closer, reported *error) {
 }
 
 // onError lets caller to handle errors
-// occured when copying a file.
+// occurred when copying a file.
 func onError(src, dest string, err error, opt Options) error {
 	if opt.OnError == nil {
 		return err
