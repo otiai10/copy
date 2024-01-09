@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"golang.org/x/sync/errgroup"
@@ -285,6 +286,10 @@ func onsymlink(src, dest string, opt Options) error {
 		orig, err := os.Readlink(src)
 		if err != nil {
 			return err
+		}
+		if strings.HasPrefix(orig, ".") {
+			// orig is a relative link: need to add src dir to orig
+			orig = filepath.Join(filepath.Dir(src), orig)
 		}
 		info, err := os.Lstat(orig)
 		if err != nil {

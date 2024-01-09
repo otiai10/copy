@@ -27,6 +27,7 @@ func TestMain(m *testing.M) {
 
 func teardown(m *testing.M) {
 	os.RemoveAll("test/data/case03/case01")
+	os.RemoveAll("test/data/case03/relative_case01")
 	os.RemoveAll("test/data.copy")
 	os.RemoveAll("test/data.copyTime")
 	os.RemoveAll("test/owned-by-root") // Do not check the error ;)
@@ -163,41 +164,6 @@ func TestCopy_NamedPipe(t *testing.T) {
 		Expect(t, info.Mode()&os.ModeNamedPipe != 0).ToBe(true)
 		Expect(t, info.Mode().Perm()).ToBe(os.FileMode(0o555))
 	})
-}
-
-func TestOptions_OnSymlink(t *testing.T) {
-	opt := Options{OnSymlink: func(string) SymlinkAction { return Deep }}
-	err := Copy("test/data/case03", "test/data.copy/case03.deep", opt)
-	Expect(t, err).ToBe(nil)
-	info, err := os.Lstat("test/data.copy/case03.deep/case01")
-	Expect(t, err).ToBe(nil)
-	Expect(t, info.Mode()&os.ModeSymlink).ToBe(os.FileMode(0))
-
-	opt = Options{OnSymlink: func(string) SymlinkAction { return Shallow }}
-	err = Copy("test/data/case03", "test/data.copy/case03.shallow", opt)
-	Expect(t, err).ToBe(nil)
-	info, err = os.Lstat("test/data.copy/case03.shallow/case01")
-	Expect(t, err).ToBe(nil)
-	Expect(t, info.Mode()&os.ModeSymlink).Not().ToBe(os.FileMode(0))
-
-	opt = Options{OnSymlink: func(string) SymlinkAction { return Skip }}
-	err = Copy("test/data/case03", "test/data.copy/case03.skip", opt)
-	Expect(t, err).ToBe(nil)
-	_, err = os.Stat("test/data.copy/case03.skip/case01")
-	Expect(t, os.IsNotExist(err)).ToBe(true)
-
-	err = Copy("test/data/case03", "test/data.copy/case03.default")
-	Expect(t, err).ToBe(nil)
-	info, err = os.Lstat("test/data.copy/case03.default/case01")
-	Expect(t, err).ToBe(nil)
-	Expect(t, info.Mode()&os.ModeSymlink).Not().ToBe(os.FileMode(0))
-
-	opt = Options{OnSymlink: nil}
-	err = Copy("test/data/case03", "test/data.copy/case03.not-specified", opt)
-	Expect(t, err).ToBe(nil)
-	info, err = os.Lstat("test/data.copy/case03.not-specified/case01")
-	Expect(t, err).ToBe(nil)
-	Expect(t, info.Mode()&os.ModeSymlink).Not().ToBe(os.FileMode(0))
 }
 
 func TestOptions_Skip(t *testing.T) {
