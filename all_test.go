@@ -454,3 +454,25 @@ func TestOptions_PreferConcurrent(t *testing.T) {
 	err := Copy("test/data/case19", "test/data.copy/case19_preferconcurrent", opt)
 	Expect(t, err).ToBe(nil)
 }
+
+func TestOptions_RenameDestination(t *testing.T) {
+	opt := Options{
+		RenameDestination: func(s, d string) (string, error) {
+			// Your own logic here
+			if strings.HasSuffix(s, ".template") {
+				return strings.TrimSuffix(d, ".template"), nil
+			} else if strings.HasSuffix(s, ".tpl") {
+				return strings.TrimSuffix(d, ".tpl"), nil
+			}
+			return d, nil // otherwise do nothing
+		},
+	}
+	err := Copy("test/data/case20", "test/data.copy/case20", opt)
+	Expect(t, err).ToBe(nil)
+	_, err = os.Stat("test/data.copy/case20/foo/main.go.template")
+	Expect(t, os.IsNotExist(err)).ToBe(true)
+	_, err = os.Stat("test/data.copy/case20/foo/main.go")
+	Expect(t, err).ToBe(nil)
+	_, err = os.Stat("test/data.copy/case20/foo/control.txt")
+	Expect(t, err).ToBe(nil)
+}

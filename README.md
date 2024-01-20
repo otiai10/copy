@@ -47,6 +47,10 @@ type Options struct {
 	// Skip can specify which files should be skipped
 	Skip func(srcinfo os.FileInfo, src, dest string) (bool, error)
 
+	// RenameDestination can rename destination.
+	// If not set, nil, it does nothing.
+	RenameDestination func(src, dest string) (string, error)
+
 	// PermissionControl can control permission of
 	// every entry.
 	// When you want to add permission 0222, do like
