@@ -100,15 +100,6 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 		return
 	}
 
-	if opt.NameRegexp != nil && opt.OnNameMatch != nil {
-		destName := filepath.Base(dest)
-		destDir := filepath.Dir(dest)
-		if opt.NameRegexp.MatchString(destName) {
-			newName := opt.OnNameMatch(opt.NameRegexp, destName)
-			dest = filepath.Join(destDir, newName)
-		}
-	}
-
 	f, err := os.Create(dest)
 	if err != nil {
 		return

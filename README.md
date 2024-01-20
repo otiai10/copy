@@ -44,11 +44,6 @@ type Options struct {
 	// OnError can let users decide how to handle errors (e.g., you can suppress specific error).
 	OnError func(src, dest, string, err error) error
 
-    	// OnNameMatch returns new destination file name
-	// when source file name matches the specified pattern
-	// that has been parsed by NameRegexp
-	OnNameMatch func(re *regexp.Regexp, src string) string
-    
 	// Skip can specify which files should be skipped
 	Skip func(srcinfo os.FileInfo, src, dest string) (bool, error)
 
@@ -98,9 +93,6 @@ type Options struct {
 	// Please refer to https://pkg.go.dev/golang.org/x/sync/semaphore for more details.
 	NumOfWorkers int64
 
-    	// NameRegexp is used for matching source file name.
-	NameRegexp *regexp.Regexp
-
 	// PreferConcurrent is a function to determine whether or not
 	// to use goroutine for copying contents of directories.
 	// If PreferConcurrent is nil, which is default, it does concurrent
@@ -117,13 +109,6 @@ opt := Options{
 		return strings.HasSuffix(src, ".git"), nil
 	},
 }
-err := Copy("your/directory", "your/directory.copy", opt)
-
-// Rename files when copying...
-re := regexp.MustCompile(`(?m)(\.stub)$`)
-opt := Options{NameRegexp: re, OnNameMatch: func(re *regexp.Regexp, src string) string {
-	return re.ReplaceAllString(src, "")
-}}
 err := Copy("your/directory", "your/directory.copy", opt)
 ```
 
