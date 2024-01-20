@@ -47,6 +47,12 @@ func switchboard(src, dest string, info os.FileInfo, opt Options) (err error) {
 		return onError(src, dest, err, opt)
 	}
 
+	if opt.RenameDestination != nil {
+		if dest, err = opt.RenameDestination(src, dest); err != nil {
+			return onError(src, dest, err, opt)
+		}
+	}
+
 	switch {
 	case info.Mode()&os.ModeSymlink != 0:
 		err = onsymlink(src, dest, opt)
