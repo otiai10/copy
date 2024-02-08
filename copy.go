@@ -312,14 +312,16 @@ func onsymlink(src, dest string, opt Options) error {
 // lcopy is for a symlink,
 // with just creating a new symlink by replicating src symlink.
 func lcopy(src, dest string) error {
-	src, err := os.Readlink(src)
+	orig, err := os.Readlink(src)
+	// @See https://github.com/otiai10/copy/issues/111
+	// TODO: This might be controlled by Options in the future.
 	if err != nil {
-		if os.IsNotExist(err) {
-			return nil
+		if os.IsNotExist(err) { // Copy symlink even if not existing
+			return os.Symlink(src, dest)
 		}
 		return err
 	}
-	return os.Symlink(src, dest)
+	return os.Symlink(orig, dest)
 }
 
 // fclose ANYHOW closes file,
