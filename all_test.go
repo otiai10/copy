@@ -65,7 +65,7 @@ func TestCopy(t *testing.T) {
 
 	When(t, "try to copy to an existing path", func(t *testing.T) {
 		err := Copy("test/data/case03", "test/data.copy/case03")
-		Expect(t, err).Not().ToBe(nil)
+		Expect(t, err).ToBe(nil)
 	})
 
 	When(t, "try to copy READ-not-allowed source", func(t *testing.T) {

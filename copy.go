@@ -321,6 +321,15 @@ func lcopy(src, dest string) error {
 		}
 		return err
 	}
+
+	// @See https://github.com/otiai10/copy/issues/132
+	// TODO: Control by SymlinkExistsAction
+	if _, err := os.Lstat(dest); err == nil {
+		if err := os.Remove(dest); err != nil {
+			return err
+		}
+	}
+
 	return os.Symlink(orig, dest)
 }
 
