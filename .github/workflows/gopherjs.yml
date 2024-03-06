@@ -17,7 +17,8 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        go: [1.18]
+        # Check supported Go version https://github.com/gopherjs/gopherjs/blob/master/compiler/version_check.go#L17-L18
+        go: [1.19]
     steps:
 
     - name: Set up Go
