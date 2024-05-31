@@ -26,7 +26,7 @@ func TestMain(m *testing.M) {
 
 func teardown(m *testing.M) {
 	os.RemoveAll("test/data/case03/case01")
-	os.RemoveAll("test/data/case03/relative_case01")
+	os.Remove("test/data/case03/relative_foo")
 	os.RemoveAll("test/data.copy")
 	os.RemoveAll("test/data.copyTime")
 	os.RemoveAll("test/owned-by-root") // Do not check the error ;)
