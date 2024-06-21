@@ -86,18 +86,12 @@ func copyNextOrSkip(src, dest string, info os.FileInfo, opt Options) error {
 // with considering existence of parent directory
 // and file permission.
 func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
-
-	var readcloser io.ReadCloser
-	if opt.FS != nil {
-		readcloser, err = opt.FS.Open(src)
-	} else {
-		readcloser, err = os.Open(src)
-	}
+	readcloser, err := fopen(src, opt)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return nil
+		if !os.IsNotExist(err) {
+			return
 		}
-		return
+		return nil
 	}
 	defer fclose(readcloser, &err)
 
@@ -155,14 +149,23 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 	return
 }
 
+// fopen opens the named file,
+// and returns it regardless of its type
+// fs.File or *os.File
+func fopen(src string, opt Options) (io.ReadCloser, error) {
+	if opt.FS != nil {
+		return opt.FS.Open(src)
+	}
+	return os.Open(src)
+}
+
 // dcopy is for a directory,
 // with scanning contents inside the directory
 // and pass everything to "copy" recursively.
 func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
-	if skip, err := onDirExists(opt, srcdir, destdir); err != nil {
-		return err
-	} else if skip {
-		return nil
+	skip, err := onDirExists(opt, srcdir, destdir)
+	if err != nil || skip {
+		return
 	}
 
 	// Make dest dir with 0755 so that everything writable.
@@ -172,20 +175,9 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 	}
 	defer chmodfunc(&err)
 
-	var entries []fs.DirEntry
-	if opt.FS != nil {
-		entries, err = fs.ReadDir(opt.FS, srcdir)
-		if err != nil {
-			return err
-		}
-	} else {
-		entries, err = os.ReadDir(srcdir)
-		if err != nil {
-			if os.IsNotExist(err) {
-				return nil
-			}
-			return err
-		}
+	entries, err := dread(srcdir, opt.FS)
+	if err != nil || entries == nil {
+		return
 	}
 
 	contents := make([]fs.FileInfo, 0, len(entries))
@@ -197,16 +189,12 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 		contents = append(contents, info)
 	}
 
-	if yes, err := shouldCopyDirectoryConcurrent(opt, srcdir, destdir); err != nil {
-		return err
-	} else if yes {
-		if err := dcopyConcurrent(srcdir, destdir, contents, opt); err != nil {
-			return err
-		}
-	} else {
-		if err := dcopySequential(srcdir, destdir, contents, opt); err != nil {
-			return err
-		}
+	shouldCopyConcurrent, err := shouldCopyDirectoryConcurrent(opt, srcdir, destdir)
+	if err != nil {
+		return
+	}
+	if err = chooseAndPerformCopyMethod(shouldCopyConcurrent, srcdir, destdir, contents, opt); err != nil {
+		return
 	}
 
 	if opt.PreserveTimes {
@@ -222,6 +210,30 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 	}
 
 	return
+}
+
+// dread reads the named directory,
+// it regardless if it's a filesystem
+// and returns list of directory entries.
+func dread(srcdir string, fsys fs.FS) ([]fs.DirEntry, error) {
+	if fsys != nil {
+		return fs.ReadDir(fsys, srcdir)
+	}
+	entries, err := os.ReadDir(srcdir)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return nil, err
+		}
+		return nil, nil
+	}
+	return entries, nil
+}
+
+func chooseAndPerformCopyMethod(shouldCopyConcurrent bool, srcdir, destdir string, contents []fs.FileInfo, opt Options) error {
+	if shouldCopyConcurrent {
+		return dcopyConcurrent(srcdir, destdir, contents, opt)
+	}
+	return dcopySequential(srcdir, destdir, contents, opt)
 }
 
 func dcopySequential(srcdir, destdir string, contents []os.FileInfo, opt Options) error {
@@ -262,7 +274,10 @@ func dcopyConcurrent(srcdir, destdir string, contents []os.FileInfo, opt Options
 
 func onDirExists(opt Options, srcdir, destdir string) (bool, error) {
 	_, err := os.Stat(destdir)
-	if err == nil && opt.OnDirExists != nil && destdir != opt.intent.dest {
+	if err != nil && !os.IsNotExist(err) {
+		return true, err // Unwelcome error type...!
+	}
+	if opt.OnDirExists != nil && destdir != opt.intent.dest {
 		switch opt.OnDirExists(srcdir, destdir) {
 		case Replace:
 			if err := os.RemoveAll(destdir); err != nil {
@@ -271,8 +286,6 @@ func onDirExists(opt Options, srcdir, destdir string) (bool, error) {
 		case Untouchable:
 			return true, nil
 		} // case "Merge" is default behaviour. Go through.
-	} else if err != nil && !os.IsNotExist(err) {
-		return true, err // Unwelcome error type...!
 	}
 	return false, nil
 }

@@ -155,7 +155,8 @@ func assureOptions(src, dest string, opts ...Options) Options {
 	}
 	if opts[0].AddPermission > 0 {
 		opts[0].PermissionControl = AddPermission(opts[0].AddPermission)
-	} else if opts[0].PermissionControl == nil {
+	}
+	if opts[0].PermissionControl == nil {
 		opts[0].PermissionControl = PreservePermission
 	}
 	opts[0].intent.src = defopt.intent.src

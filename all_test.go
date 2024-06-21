@@ -461,7 +461,8 @@ func TestOptions_RenameDestination(t *testing.T) {
 			// Your own logic here
 			if strings.HasSuffix(s, ".template") {
 				return strings.TrimSuffix(d, ".template"), nil
-			} else if strings.HasSuffix(s, ".tpl") {
+			}
+			if strings.HasSuffix(s, ".tpl") {
 				return strings.TrimSuffix(d, ".tpl"), nil
 			}
 			return d, nil // otherwise do nothing
