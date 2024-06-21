@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func setup(m *testing.M) {
+func setup(_ *testing.M) {
 	os.RemoveAll("test/data.copy")
 	os.MkdirAll("test/data.copy", os.ModePerm)
 	os.Symlink("../case01", "test/data/case03/case01")
