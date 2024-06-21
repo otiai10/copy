@@ -28,7 +28,7 @@ var (
 			}, nil
 		}
 	}
-	PerservePermission PermissionControlFunc = AddPermission(0)
+	PreservePermission PermissionControlFunc = AddPermission(0)
 	DoNothing          PermissionControlFunc = func(srcinfo fs.FileInfo, dest string) (func(*error), error) {
 		if srcinfo.IsDir() {
 			if err := os.MkdirAll(dest, srcinfo.Mode()); err != nil {

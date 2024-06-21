@@ -130,7 +130,7 @@ func getDefaultOptions(src, dest string) Options {
 		OnError:           nil,                // Default is "accept error"
 		Skip:              nil,                // Do not skip anything
 		AddPermission:     0,                  // Add nothing
-		PermissionControl: PerservePermission, // Just preserve permission
+		PermissionControl: PreservePermission, // Just preserve permission
 		Sync:              false,              // Do not sync
 		Specials:          false,              // Do not copy special files
 		PreserveTimes:     false,              // Do not preserve the modification time
@@ -156,7 +156,7 @@ func assureOptions(src, dest string, opts ...Options) Options {
 	if opts[0].AddPermission > 0 {
 		opts[0].PermissionControl = AddPermission(opts[0].AddPermission)
 	} else if opts[0].PermissionControl == nil {
-		opts[0].PermissionControl = PerservePermission
+		opts[0].PermissionControl = PreservePermission
 	}
 	opts[0].intent.src = defopt.intent.src
 	opts[0].intent.dest = defopt.intent.dest

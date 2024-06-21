@@ -24,7 +24,7 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func teardown(m *testing.M) {
+func teardown(_ *testing.M) {
 	os.RemoveAll("test/data/case03/case01")
 	os.Remove("test/data/case03/relative_foo")
 	os.RemoveAll("test/data.copy")
@@ -420,7 +420,7 @@ func TestOptions_FS(t *testing.T) {
 	os.RemoveAll("test/data/case18/assets")
 	err := Copy("test/data/case18/assets", "test/data.copy/case18/assets", Options{
 		FS:                assets,
-		PermissionControl: AddPermission(200), // FIXME
+		PermissionControl: AddPermission(0200), // FIXME
 	})
 	Expect(t, err).ToBe(nil)
 }
