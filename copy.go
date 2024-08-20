@@ -90,6 +90,29 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 		return
 	}
 
+	// Copy the file.
+	if err = fcopyBytes(src, dest, info, opt); err != nil {
+		return
+	}
+
+	// If options set to true, change permissions and times of the copied file.
+	if opt.PreserveOwner {
+		if err := preserveOwner(src, dest, info); err != nil {
+			return err
+		}
+	}
+	if opt.PreserveTimes {
+		if err := preserveTimes(info, dest); err != nil {
+			return err
+		}
+	}
+
+	return
+}
+
+// fcopyBytes performs the file copying by reading from the source file and
+// writing to the destination file using a buffer.
+func fcopyBytes(src, dest string, info os.FileInfo, opt Options) (err error) {
 	var readcloser io.ReadCloser
 	if opt.FS != nil {
 		readcloser, err = opt.FS.Open(src)
@@ -110,11 +133,9 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 	}
 	defer fclose(f, &err)
 
-	chmodfunc, err := opt.PermissionControl(info, dest)
-	if err != nil {
+	if err = applyPermissionControl(dest, info, opt); err != nil {
 		return err
 	}
-	chmodfunc(&err)
 
 	var buf []byte = nil
 	var w io.Writer = f
@@ -140,18 +161,17 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 		err = f.Sync()
 	}
 
-	if opt.PreserveOwner {
-		if err := preserveOwner(src, dest, info); err != nil {
-			return err
-		}
-	}
-	if opt.PreserveTimes {
-		if err := preserveTimes(info, dest); err != nil {
-			return err
-		}
+	return
+}
+
+func applyPermissionControl(dest string, info os.FileInfo, opt Options) error {
+	chmodfunc, err := opt.PermissionControl(info, dest)
+	if err != nil {
+		return err
 	}
 
-	return
+	chmodfunc(&err)
+	return err
 }
 
 // dcopy is for a directory,
