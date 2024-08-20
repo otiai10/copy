@@ -135,6 +135,30 @@ func TestCopy(t *testing.T) {
 		err = Copy(src, dest, opt)
 		Expect(t, err).ToBe(nil)
 	})
+	When(t, "fs copy should not write outside fs", func(t *testing.T) {
+		subdir := t.TempDir()
+		subfs := os.DirFS(subdir)
+
+		// Copy assets to subdir so that they're available for fs.
+		src := "test/data/case18/assets"
+		err := Copy(src, filepath.Join(subdir, src))
+		Expect(t, err).ToBe(nil)
+
+		// Define a new destination for the assets in the subdir so they are reachable.
+		dest := "test/data.copy/case18/assets"
+		err = Copy(src, dest, Options{FS: subfs})
+		Expect(t, err).ToBe(nil)
+
+		_, err = os.Stat(filepath.Join(subdir, dest))
+		Expect(t, err).ToBe(nil)
+	})
+	When(t, "fs copy relative when fs is root", func(t *testing.T) {
+		dest := t.TempDir()
+		err := Copy("test/data/case18/assets", dest, Options{
+			FS: os.DirFS("/"),
+		})
+		Expect(t, err).ToBe(nil)
+	})
 }
 
 func TestCopy_NamedPipe(t *testing.T) {
