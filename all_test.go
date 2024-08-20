@@ -476,3 +476,31 @@ func TestOptions_RenameDestination(t *testing.T) {
 	_, err = os.Stat("test/data.copy/case20/foo/control.txt")
 	Expect(t, err).ToBe(nil)
 }
+
+func TestOptions_CopyOnWrite(t *testing.T) {
+	if !platformSupportsCopyOnWrite {
+		t.Logf("Copy on write not supported for %s. This should be slower.", runtime.GOOS)
+	}
+
+	const largeFileSize = 32 * 1024 * 1024 // 32 MiB
+
+	// Generate a massive file.
+	file, err := os.Create("test/data/case21/larger.file")
+	if err != nil {
+		t.Errorf("failed to create test file: %v", err)
+		return
+	}
+
+	if err := file.Truncate(int64(largeFileSize)); err != nil {
+		t.Errorf("failed to truncate test file: %v", err)
+		t.SkipNow()
+		return
+	}
+
+	// Copy it using CoW.
+	err = Copy("test/data/case21", "test/data.copy/case21", Options{
+		CopyOnWrite: CopyOnWriteRequired,
+	})
+
+	Expect(t, err).ToBe(nil)
+}

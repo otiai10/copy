@@ -7,3 +7,4 @@ vendor
 
 # Test Specific
 test/data/case16/large.file
+test/data/case21/larger.file
