@@ -87,6 +87,41 @@ func copyNextOrSkip(src, dest string, info os.FileInfo, opt Options) error {
 // and file permission.
 func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 
+	if err = os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
+		return
+	}
+
+	err = fcopyByReadAndWrite(src, dest, info, opt)
+	if err != nil {
+		return err
+	}
+
+	chmodfunc, err := opt.PermissionControl(info, dest)
+	if err != nil {
+		return err
+	}
+	chmodfunc(&err)
+	if os.IsNotExist(err) {
+		// See https://github.com/otiai10/copy/issues/72
+		// Gracefully handle files/symlinks/dirs deleted while copy
+		return nil
+	}
+
+	if opt.PreserveOwner {
+		if err := preserveOwner(src, dest, info); err != nil {
+			return err
+		}
+	}
+	if opt.PreserveTimes {
+		if err := preserveTimes(info, dest); err != nil {
+			return err
+		}
+	}
+
+	return
+}
+
+func fcopyByReadAndWrite(src, dest string, info os.FileInfo, opt Options) (err error) {
 	var readcloser io.ReadCloser
 	if opt.FS != nil {
 		readcloser, err = opt.FS.Open(src)
@@ -101,21 +136,11 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 	}
 	defer fclose(readcloser, &err)
 
-	if err = os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
-		return
-	}
-
 	f, err := os.Create(dest)
 	if err != nil {
 		return
 	}
 	defer fclose(f, &err)
-
-	chmodfunc, err := opt.PermissionControl(info, dest)
-	if err != nil {
-		return err
-	}
-	chmodfunc(&err)
 
 	var buf []byte = nil
 	var w io.Writer = f
@@ -141,18 +166,7 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 		err = f.Sync()
 	}
 
-	if opt.PreserveOwner {
-		if err := preserveOwner(src, dest, info); err != nil {
-			return err
-		}
-	}
-	if opt.PreserveTimes {
-		if err := preserveTimes(info, dest); err != nil {
-			return err
-		}
-	}
-
-	return
+	return err
 }
 
 // dcopy is for a directory,
