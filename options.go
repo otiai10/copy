@@ -167,6 +167,8 @@ func getDefaultOptions(src, dest string) Options {
 
 // assureOptions struct, should be called only once.
 // All optional values MUST NOT BE nil/zero after assured.
+//
+// FIXME: Isn't this supposed to merge the options?
 func assureOptions(src, dest string, opts ...Options) Options {
 	defopt := getDefaultOptions(src, dest)
 	if len(opts) == 0 {

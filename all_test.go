@@ -30,12 +30,12 @@ func teardown(m *testing.M) {
 	os.RemoveAll("test/data.copy")
 	os.RemoveAll("test/data.copyTime")
 	os.RemoveAll("test/owned-by-root") // Do not check the error ;)
-	Copy("test/data/case18/assets.backup", "test/data/case18/assets")
+	CopyInTest("test/data/case18/assets.backup", "test/data/case18/assets")
 	os.RemoveAll("test/data/case18/assets.backup")
 }
 
 func TestCopy(t *testing.T) {
-	err := Copy("./test/data/case00", "./test/data.copy/case00")
+	err := CopyInTest("./test/data/case00", "./test/data.copy/case00")
 	Expect(t, err).ToBe(nil)
 	info, err := os.Stat("./test/data.copy/case00/README.md")
 	Expect(t, err).ToBe(nil)
@@ -43,12 +43,12 @@ func TestCopy(t *testing.T) {
 	Expect(t, info.IsDir()).ToBe(false)
 
 	When(t, "specified src doesn't exist", func(t *testing.T) {
-		err := Copy("NOT/EXISTING/SOURCE/PATH", "anywhere")
+		err := CopyInTest("NOT/EXISTING/SOURCE/PATH", "anywhere")
 		Expect(t, err).Not().ToBe(nil)
 	})
 
 	When(t, "specified src is just a file", func(t *testing.T) {
-		err := Copy("test/data/case01/README.md", "test/data.copy/case01/README.md")
+		err := CopyInTest("test/data/case01/README.md", "test/data.copy/case01/README.md")
 		Expect(t, err).ToBe(nil)
 		content, err := os.ReadFile("test/data.copy/case01/README.md")
 		Expect(t, err).ToBe(nil)
@@ -56,7 +56,7 @@ func TestCopy(t *testing.T) {
 	})
 
 	When(t, "source directory includes symbolic link", func(t *testing.T) {
-		err := Copy("test/data/case03", "test/data.copy/case03")
+		err := CopyInTest("test/data/case03", "test/data.copy/case03")
 		Expect(t, err).ToBe(nil)
 		info, err := os.Lstat("test/data.copy/case03/case01")
 		Expect(t, err).ToBe(nil)
@@ -64,19 +64,19 @@ func TestCopy(t *testing.T) {
 	})
 
 	When(t, "try to copy to an existing path", func(t *testing.T) {
-		err := Copy("test/data/case03", "test/data.copy/case03")
+		err := CopyInTest("test/data/case03", "test/data.copy/case03")
 		Expect(t, err).ToBe(nil)
 	})
 
 	When(t, "try to copy READ-not-allowed source", func(t *testing.T) {
-		err := Copy("test/data/doesNotExist", "test/data.copy/doesNotExist")
+		err := CopyInTest("test/data/doesNotExist", "test/data.copy/doesNotExist")
 		Expect(t, err).Not().ToBe(nil)
 	})
 
 	When(t, "try to copy a file to existing path", func(t *testing.T) {
-		err := Copy("test/data/case04/README.md", "test/data/case04")
+		err := CopyInTest("test/data/case04/README.md", "test/data/case04")
 		Expect(t, err).Not().ToBe(nil)
-		err = Copy("test/data/case04/README.md", "test/data/case04/README.md/foobar")
+		err = CopyInTest("test/data/case04/README.md", "test/data/case04/README.md/foobar")
 		Expect(t, err).Not().ToBe(nil)
 	})
 
@@ -85,7 +85,7 @@ func TestCopy(t *testing.T) {
 		dest := "test/data.copy/case05"
 		err := os.Chmod(src, os.FileMode(0o555))
 		Expect(t, err).ToBe(nil)
-		err = Copy(src, dest)
+		err = CopyInTest(src, dest)
 		Expect(t, err).ToBe(nil)
 		info, err := os.Lstat(dest)
 		Expect(t, err).ToBe(nil)
@@ -106,7 +106,7 @@ func TestCopy(t *testing.T) {
 			os.Remove(src)
 			return false, nil
 		}}
-		err = Copy(src, dest, opt)
+		err = CopyInTest(src, dest, opt)
 		Expect(t, err).ToBe(nil)
 	})
 	When(t, "symlink is deleted while copying", func(t *testing.T) {
@@ -119,7 +119,7 @@ func TestCopy(t *testing.T) {
 			os.Remove(src)
 			return false, nil
 		}}
-		err = Copy(src, dest, opt)
+		err = CopyInTest(src, dest, opt)
 		Expect(t, err).ToBe(nil)
 	})
 	When(t, "directory is deleted while copying", func(t *testing.T) {
@@ -132,7 +132,7 @@ func TestCopy(t *testing.T) {
 			os.Remove(src)
 			return false, nil
 		}}
-		err = Copy(src, dest, opt)
+		err = CopyInTest(src, dest, opt)
 		Expect(t, err).ToBe(nil)
 	})
 }
@@ -144,7 +144,7 @@ func TestCopy_NamedPipe(t *testing.T) {
 
 	When(t, "specified src contains a folder with a named pipe", func(t *testing.T) {
 		dest := "test/data.copy/case11"
-		err := Copy("test/data/case11", dest)
+		err := CopyInTest("test/data/case11", dest)
 		Expect(t, err).ToBe(nil)
 
 		info, err := os.Lstat("test/data/case11/foo/bar")
@@ -155,7 +155,7 @@ func TestCopy_NamedPipe(t *testing.T) {
 
 	When(t, "specified src is a named pipe", func(t *testing.T) {
 		dest := "test/data.copy/case11/foo/bar.named"
-		err := Copy("test/data/case11/foo/bar", dest)
+		err := CopyInTest("test/data/case11/foo/bar", dest)
 		Expect(t, err).ToBe(nil)
 
 		info, err := os.Lstat(dest)
@@ -176,7 +176,7 @@ func TestOptions_Skip(t *testing.T) {
 			return false, nil
 		}
 	}}
-	err := Copy("test/data/case06", "test/data.copy/case06", opt)
+	err := CopyInTest("test/data/case06", "test/data.copy/case06", opt)
 	Expect(t, err).ToBe(nil)
 	info, err := os.Stat("./test/data.copy/case06/dir_skip")
 	Expect(t, info).ToBe(nil)
@@ -203,7 +203,7 @@ func TestOptions_Skip(t *testing.T) {
 		opt := Options{Skip: func(info os.FileInfo, src, dest string) (bool, error) {
 			return false, errInsideSkipFunc
 		}}
-		err := Copy("test/data/case06", "test/data.copy/case06.01", opt)
+		err := CopyInTest("test/data/case06", "test/data.copy/case06.01", opt)
 		Expect(t, err).ToBe(errInsideSkipFunc)
 		files, err := os.ReadDir("./test/data.copy/case06.01")
 		Expect(t, err).ToBe(nil)
@@ -213,7 +213,7 @@ func TestOptions_Skip(t *testing.T) {
 
 func TestOptions_Specials(t *testing.T) {
 	if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
-		err := Copy("/dev/null", "test/data.copy/dev-null", Options{Specials: false})
+		err := CopyInTest("/dev/null", "test/data.copy/dev-null", Options{Specials: false})
 		Expect(t, err).ToBe(nil)
 	}
 }
@@ -228,7 +228,7 @@ func TestOptions_PermissionControl(t *testing.T) {
 	Expect(t, info.Mode()).ToBe(os.FileMode(0o444))
 
 	opt := Options{PermissionControl: AddPermission(0o222)}
-	err = Copy("test/data/case07", "test/data.copy/case07", opt)
+	err = CopyInTest("test/data/case07", "test/data.copy/case07", opt)
 	Expect(t, err).ToBe(nil)
 
 	info, err = os.Stat("test/data.copy/case07/dir_0555")
@@ -240,7 +240,7 @@ func TestOptions_PermissionControl(t *testing.T) {
 	Expect(t, info.Mode()).ToBe(os.FileMode(0o444 | 0o222))
 
 	When(t, "try to copy a dir owned by other users", func(t *testing.T) {
-		err := Copy("test/data/case14", "test/owned-by-root", Options{
+		err := CopyInTest("test/data/case14", "test/owned-by-root", Options{
 			PermissionControl: DoNothing, // ONLY docker tests fail when you comment out this line
 		})
 		Expect(t, err).ToBe(nil)
@@ -251,15 +251,15 @@ func TestOptions_Sync(t *testing.T) {
 	// With Sync option, each file will be flushed to storage on copying.
 	// TODO: Since it's a bit hard to simulate real usecases here. This testcase is nonsense.
 	opt := Options{Sync: true}
-	err := Copy("test/data/case08", "test/data.copy/case08", opt)
+	err := CopyInTest("test/data/case08", "test/data.copy/case08", opt)
 	Expect(t, err).ToBe(nil)
 }
 
 func TestOptions_PreserveTimes(t *testing.T) {
-	err := Copy("test/data/case09", "test/data.copy/case09")
+	err := CopyInTest("test/data/case09", "test/data.copy/case09")
 	Expect(t, err).ToBe(nil)
 	opt := Options{PreserveTimes: true}
-	err = Copy("test/data/case09", "test/data.copy/case09-preservetimes", opt)
+	err = CopyInTest("test/data/case09", "test/data.copy/case09-preservetimes", opt)
 	Expect(t, err).ToBe(nil)
 
 	for _, entry := range []string{"", "README.md", "symlink"} {
@@ -275,11 +275,11 @@ func TestOptions_PreserveTimes(t *testing.T) {
 }
 
 func TestOptions_OnDirExists(t *testing.T) {
-	err := Copy("test/data/case10/dest", "test/data.copy/case10/dest.1")
+	err := CopyInTest("test/data/case10/dest", "test/data.copy/case10/dest.1")
 	Expect(t, err).ToBe(nil)
-	err = Copy("test/data/case10/dest", "test/data.copy/case10/dest.2")
+	err = CopyInTest("test/data/case10/dest", "test/data.copy/case10/dest.2")
 	Expect(t, err).ToBe(nil)
-	err = Copy("test/data/case10/dest", "test/data.copy/case10/dest.3")
+	err = CopyInTest("test/data/case10/dest", "test/data.copy/case10/dest.3")
 	Expect(t, err).ToBe(nil)
 
 	opt := Options{}
@@ -287,9 +287,9 @@ func TestOptions_OnDirExists(t *testing.T) {
 	opt.OnDirExists = func(src, dest string) DirExistsAction {
 		return Merge
 	}
-	err = Copy("test/data/case10/src", "test/data.copy/case10/dest.1", opt)
+	err = CopyInTest("test/data/case10/src", "test/data.copy/case10/dest.1", opt)
 	Expect(t, err).ToBe(nil)
-	err = Copy("test/data/case10/src", "test/data.copy/case10/dest.1", opt)
+	err = CopyInTest("test/data/case10/src", "test/data.copy/case10/dest.1", opt)
 	Expect(t, err).ToBe(nil)
 	b, err := os.ReadFile("test/data.copy/case10/dest.1/" + "foo/" + "text_aaa")
 	Expect(t, err).ToBe(nil)
@@ -301,9 +301,9 @@ func TestOptions_OnDirExists(t *testing.T) {
 	opt.OnDirExists = func(src, dest string) DirExistsAction {
 		return Replace
 	}
-	err = Copy("test/data/case10/src", "test/data.copy/case10/dest.2", opt)
+	err = CopyInTest("test/data/case10/src", "test/data.copy/case10/dest.2", opt)
 	Expect(t, err).ToBe(nil)
-	err = Copy("test/data/case10/src", "test/data.copy/case10/dest.2", opt)
+	err = CopyInTest("test/data/case10/src", "test/data.copy/case10/dest.2", opt)
 	Expect(t, err).ToBe(nil)
 	b, err = os.ReadFile("test/data.copy/case10/dest.2/" + "foo/" + "text_aaa")
 	Expect(t, err).ToBe(nil)
@@ -315,7 +315,7 @@ func TestOptions_OnDirExists(t *testing.T) {
 	opt.OnDirExists = func(src, dest string) DirExistsAction {
 		return Untouchable
 	}
-	err = Copy("test/data/case10/src", "test/data.copy/case10/dest.3", opt)
+	err = CopyInTest("test/data/case10/src", "test/data.copy/case10/dest.3", opt)
 	Expect(t, err).ToBe(nil)
 	b, err = os.ReadFile("test/data.copy/case10/dest.3/" + "foo/" + "text_aaa")
 	Expect(t, err).ToBe(nil)
@@ -326,7 +326,7 @@ func TestOptions_OnDirExists(t *testing.T) {
 			OnDirExists:   func(src, dest string) DirExistsAction { return Untouchable },
 			PreserveTimes: true,
 		}
-		err = Copy("test/data/case10/src", "test/data.copy/case10/dest.3", opt)
+		err = CopyInTest("test/data/case10/src", "test/data.copy/case10/dest.3", opt)
 		Expect(t, err).ToBe(nil)
 	})
 }
@@ -336,7 +336,7 @@ func TestOptions_CopyBufferSize(t *testing.T) {
 		CopyBufferSize: 512,
 	}
 
-	err := Copy("test/data/case12", "test/data.copy/case12", opt)
+	err := CopyInTest("test/data/case12", "test/data.copy/case12", opt)
 	Expect(t, err).ToBe(nil)
 
 	content, err := os.ReadFile("test/data.copy/case12/README.md")
@@ -346,11 +346,15 @@ func TestOptions_CopyBufferSize(t *testing.T) {
 
 func TestOptions_PreserveOwner(t *testing.T) {
 	opt := Options{PreserveOwner: true}
-	err := Copy("test/data/case13", "test/data.copy/case13", opt)
+	err := CopyInTest("test/data/case13", "test/data.copy/case13", opt)
 	Expect(t, err).ToBe(nil)
 }
 
 func TestOptions_CopyRateLimit(t *testing.T) {
+	if isTestingCopyOnWrite {
+		t.Skip("Copy-on-write is incompatible with rate limiting.")
+		return
+	}
 
 	file, err := os.Create("test/data/case16/large.file")
 	if err != nil {
@@ -370,7 +374,7 @@ func TestOptions_CopyRateLimit(t *testing.T) {
 	}}
 
 	start := time.Now()
-	err = Copy("test/data/case16", "test/data.copy/case16", opt)
+	err = CopyInTest("test/data/case16", "test/data.copy/case16", opt)
 	elapsed := time.Since(start)
 	Expect(t, err).ToBe(nil)
 	Expect(t, elapsed > 5*time.Second).ToBe(true)
@@ -382,11 +386,11 @@ func TestOptions_OnFileError(t *testing.T) {
 	}
 
 	// existing, process normally
-	err := Copy("test/data/case17", "test/data.copy/case17", opt)
+	err := CopyInTest("test/data/case17", "test/data.copy/case17", opt)
 	Expect(t, err).ToBe(nil)
 
 	// not existing, process err
-	err = Copy("test/data/case17/non-existing", "test/data.copy/case17/non-existing", opt)
+	err = CopyInTest("test/data/case17/non-existing", "test/data.copy/case17/non-existing", opt)
 	Expect(t, os.IsNotExist(err)).ToBe(true)
 
 	_, err = os.Stat("test/data.copy/case17/non-existing")
@@ -396,12 +400,12 @@ func TestOptions_OnFileError(t *testing.T) {
 	opt.OnError = func(_, _ string, err error) error {
 		return err
 	}
-	err = Copy("test/data/case17", "test/data.copy/case17", opt)
+	err = CopyInTest("test/data/case17", "test/data.copy/case17", opt)
 	Expect(t, err).ToBe(nil)
 
 	// not existing, process err
 	opt.OnError = func(_, _ string, err error) error { return err }
-	err = Copy("test/data/case17/non-existing", "test/data.copy/case17/non-existing", opt)
+	err = CopyInTest("test/data/case17/non-existing", "test/data.copy/case17/non-existing", opt)
 	Expect(t, os.IsNotExist(err)).ToBe(true)
 
 	_, err = os.Stat("test/data.copy/case17/non-existing")
@@ -409,7 +413,7 @@ func TestOptions_OnFileError(t *testing.T) {
 
 	// not existing, ignore err
 	opt.OnError = func(_, _ string, err error) error { return nil }
-	err = Copy("test/data/case17/non-existing", "test/data.copy/case17/non-existing", opt)
+	err = CopyInTest("test/data/case17/non-existing", "test/data.copy/case17/non-existing", opt)
 	Expect(t, err).ToBe(nil)
 
 	_, err = os.Stat("test/data.copy/case17/non-existing")
@@ -418,7 +422,7 @@ func TestOptions_OnFileError(t *testing.T) {
 
 func TestOptions_FS(t *testing.T) {
 	os.RemoveAll("test/data/case18/assets")
-	err := Copy("test/data/case18/assets", "test/data.copy/case18/assets", Options{
+	err := CopyInTest("test/data/case18/assets", "test/data.copy/case18/assets", Options{
 		FS:                assets,
 		PermissionControl: AddPermission(200), // FIXME
 	})
@@ -443,7 +447,7 @@ func (r *SleepyReader) Read(p []byte) (int, error) {
 
 func TestOptions_NumOfWorkers(t *testing.T) {
 	opt := Options{NumOfWorkers: 3}
-	err := Copy("test/data/case19", "test/data.copy/case19", opt)
+	err := CopyInTest("test/data/case19", "test/data.copy/case19", opt)
 	Expect(t, err).ToBe(nil)
 }
 
@@ -451,7 +455,7 @@ func TestOptions_PreferConcurrent(t *testing.T) {
 	opt := Options{NumOfWorkers: 4, PreferConcurrent: func(sd, dd string) (bool, error) {
 		return strings.HasSuffix(sd, "concurrent"), nil
 	}}
-	err := Copy("test/data/case19", "test/data.copy/case19_preferconcurrent", opt)
+	err := CopyInTest("test/data/case19", "test/data.copy/case19_preferconcurrent", opt)
 	Expect(t, err).ToBe(nil)
 }
 
@@ -467,7 +471,7 @@ func TestOptions_RenameDestination(t *testing.T) {
 			return d, nil // otherwise do nothing
 		},
 	}
-	err := Copy("test/data/case20", "test/data.copy/case20", opt)
+	err := CopyInTest("test/data/case20", "test/data.copy/case20", opt)
 	Expect(t, err).ToBe(nil)
 	_, err = os.Stat("test/data.copy/case20/foo/main.go.template")
 	Expect(t, os.IsNotExist(err)).ToBe(true)
@@ -498,7 +502,7 @@ func TestOptions_CopyOnWrite(t *testing.T) {
 	}
 
 	// Copy it using CoW.
-	err = Copy("test/data/case21", "test/data.copy/case21", Options{
+	err = CopyInTest("test/data/case21", "test/data.copy/case21", Options{
 		CopyOnWrite: CopyOnWriteRequired,
 	})
 
