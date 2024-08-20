@@ -91,9 +91,14 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 		return
 	}
 
-	err = fcopyByReadAndWrite(src, dest, info, opt)
-	if err != nil {
-		return err
+	if opt.FileCopyFunc != nil {
+		if err = opt.FileCopyFunc(src, dest); err != nil {
+			return err
+		}
+	} else {
+		if err = fcopyByReadAndWrite(src, dest, info, opt); err != nil {
+			return err
+		}
 	}
 
 	chmodfunc, err := opt.PermissionControl(info, dest)
