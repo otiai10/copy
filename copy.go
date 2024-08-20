@@ -86,6 +86,9 @@ func copyNextOrSkip(src, dest string, info os.FileInfo, opt Options) error {
 // with considering existence of parent directory
 // and file permission.
 func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
+	if err = os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
+		return
+	}
 
 	var readcloser io.ReadCloser
 	if opt.FS != nil {
@@ -100,10 +103,6 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 		return
 	}
 	defer fclose(readcloser, &err)
-
-	if err = os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
-		return
-	}
 
 	f, err := os.Create(dest)
 	if err != nil {
