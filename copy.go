@@ -90,8 +90,7 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 		return
 	}
 
-	// Copy the file.
-	if err = fcopyBytes(src, dest, info, opt); err != nil {
+	if err = doFcopy(src, dest, info, opt); err != nil {
 		return
 	}
 
@@ -107,6 +106,29 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 		}
 	}
 
+	return
+}
+
+func doFcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
+	// Try to copy the file using copy-on-write.
+	if shouldCopyUsingCopyOnWrite(opt) {
+		err = fcopyOnWrite(src, dest, info, opt)
+		if err != nil && opt.CopyOnWrite == CopyOnWriteRequired {
+			// Copy-on-write failed, and was required.
+			return
+		}
+
+		if err == nil {
+			// Copy-on-write succeeded.
+			return nil
+		}
+
+		// Copy-on-write failed, but fallback is allowed.
+		// Fallback to the normal copy...
+	}
+
+	// Try to copy the file normally.
+	err = fcopyBytes(src, dest, info, opt)
 	return
 }
 

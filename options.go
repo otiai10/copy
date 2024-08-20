@@ -62,6 +62,10 @@ type Options struct {
 	// See https://golang.org/pkg/io/#CopyBuffer for more information.
 	CopyBufferSize uint
 
+	// If supported by the OS and filesystem, copy regular files using
+	// a copy-on-write mechanism.
+	CopyOnWrite CopyOnWrite
+
 	// If you want to add some limitation on reading src file,
 	// you can wrap the src and provide new reader,
 	// such as `RateLimitReader` in the test case.
@@ -119,6 +123,26 @@ const (
 	Untouchable
 )
 
+// CopyOnWrite represents how to handle file copying when a copy-on-write
+// mechanism is available to copy regular files.
+type CopyOnWrite int
+
+const (
+	// NeverCopyOnWrite will avoid using copy-on-write (default behavior).
+	NeverCopyOnWrite = iota
+	// CopyOnWritePreferred will use a different copy implementation
+	// if copy-on-write is not possible for any reason.
+	//
+	// This is the preferred behavior, as it avoids errors when copying between
+	// filesystems or when copying files on a filesystem that lacks support for
+	// copy-on-write.
+	CopyOnWritePreferred
+	// CopyOnWriteRequired requires copy-on-write to succeed when running on
+	// a supported GOOS. On other operating systems, this is the same as
+	// NeverCopyOnWrite.
+	CopyOnWriteRequired
+)
+
 // getDefaultOptions provides default options,
 // which would be modified by usage-side.
 func getDefaultOptions(src, dest string) Options {
@@ -136,6 +160,7 @@ func getDefaultOptions(src, dest string) Options {
 		PreserveTimes:     false,              // Do not preserve the modification time
 		CopyBufferSize:    0,                  // Do not specify, use default bufsize (32*1024)
 		WrapReader:        nil,                // Do not wrap src files, use them as they are.
+		CopyOnWrite:       NeverCopyOnWrite,   // Do not use copy-on-write, it should be opt in.
 		intent:            intent{src, dest, nil, nil},
 	}
 }
@@ -171,4 +196,25 @@ func shouldCopyDirectoryConcurrent(opt Options, srcdir, destdir string) (bool, e
 		return true, nil
 	}
 	return opt.PreferConcurrent(srcdir, destdir)
+}
+
+func shouldCopyUsingCopyOnWrite(opt Options) bool {
+	if !platformSupportsCopyOnWrite {
+		return false
+	}
+
+	// Only possible on the real filesystem.
+	if opt.FS != nil {
+		return false
+	}
+
+	// Only when allowed.
+	behavior := opt.CopyOnWrite
+	allowed := behavior == CopyOnWritePreferred || behavior == CopyOnWriteRequired
+	if !allowed {
+		return false
+	}
+
+	// Yes.
+	return true
 }
