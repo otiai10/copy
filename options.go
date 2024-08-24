@@ -32,6 +32,7 @@ type Options struct {
 	//
 	// Available implementations:
 	//    - CopyBytes (best compatibility)
+	//    - ReflinkCopy (best performance)
 	//
 	// Some implementations may not be supported on the target GOOS, or on
 	// the user's filesystem. When these fail, an error will be returned.
