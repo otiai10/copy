@@ -86,8 +86,45 @@ func copyNextOrSkip(src, dest string, info os.FileInfo, opt Options) error {
 // with considering existence of parent directory
 // and file permission.
 func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
-	err, _ = opt.FileCopyMethod.fcopy(src, dest, info, opt)
-	return err
+	if err = os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
+		return
+	}
+
+	// Use FileCopyMethod to do copy.
+	err, skipFile := opt.FileCopyMethod.fcopy(src, dest, info, opt)
+	if skipFile {
+		return nil
+	}
+
+	if err != nil {
+		return err
+	}
+
+	// Change file permissions.
+	chmodfunc, err := opt.PermissionControl(info, dest)
+	if err != nil {
+		return err
+	}
+
+	chmodfunc(&err)
+	if err != nil {
+		return err
+	}
+
+	// Preserve file ownership and times.
+	if opt.PreserveOwner {
+		if err := preserveOwner(src, dest, info); err != nil {
+			return err
+		}
+	}
+
+	if opt.PreserveTimes {
+		if err := preserveTimes(info, dest); err != nil {
+			return err
+		}
+	}
+
+	return
 }
 
 // dcopy is for a directory,
