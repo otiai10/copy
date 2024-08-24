@@ -23,7 +23,7 @@ jobs:
         environment:
          - runner: macos-latest
            filesystem: APFS
-           copymethod: GetBytes
+           copymethod: ReflinkCopy
          - runner: ubuntu-latest
            filesystem: btrfs
            copymethod: GetBytes

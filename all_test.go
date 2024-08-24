@@ -28,6 +28,10 @@ func setupFileCopyMethod(m *testing.M) {
 		defaultCopyMethod = CopyBytes
 		supportsWrapReaderOption = true
 		supportsFSOption = true
+	case "ReflinkCopy":
+		defaultCopyMethod = ReflinkCopy
+		supportsWrapReaderOption = false
+		supportsFSOption = false
 	}
 }
 
