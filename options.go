@@ -134,6 +134,10 @@ type FileCopyMethod struct {
 	fcopy func(src, dest string, info os.FileInfo, opt Options) (err error, skipFile bool)
 }
 
+// The default FileCopyMethod.
+// This only is changed during tests.
+var defaultCopyMethod = CopyBytes
+
 // getDefaultOptions provides default options,
 // which would be modified by usage-side.
 func getDefaultOptions(src, dest string) Options {
@@ -149,7 +153,7 @@ func getDefaultOptions(src, dest string) Options {
 		Sync:              false,              // Do not sync
 		Specials:          false,              // Do not copy special files
 		PreserveTimes:     false,              // Do not preserve the modification time
-		FileCopyMethod:    CopyBytes,          // Copy by bytes
+		FileCopyMethod:    defaultCopyMethod,  // Copy by bytes, unless testing this package
 		CopyBufferSize:    0,                  // Do not specify, use default bufsize (32*1024)
 		WrapReader:        nil,                // Do not wrap src files, use them as they are.
 		intent:            intent{src, dest, nil, nil},

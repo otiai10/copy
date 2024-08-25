@@ -17,8 +17,18 @@ import (
 //go:embed test/data/case18/assets
 var assets embed.FS
 
+func setupFileCopyMethod(m *testing.M) {
+	// Allow running all the tests with a different FileCopyMethod.
+	// We want to be able to have full coverage no matter the method.
+	switch os.Getenv("TEST_FILECOPYMETHOD") {
+	case "CopyBytes":
+		defaultCopyMethod = CopyBytes
+	}
+}
+
 func TestMain(m *testing.M) {
 	setup(m)
+	setupFileCopyMethod(m)
 	code := m.Run()
 	teardown(m)
 	os.Exit(code)
