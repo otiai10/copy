@@ -1,0 +1,85 @@
+# Some platform-specific file copy syscalls (e.g. creating reflinks) are only
+# supported on some platforms, and only with specific filesystems. These
+# syscalls are used by different FileCopyMethod implementations.
+#
+# This workflow sets up the conditions needed for those syscalls to work,
+# and then runs the tests with the different FileCopyMethods.
+
+name: FileCopyMethod
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test
+    runs-on: ${{ matrix.environment.runner }}
+    strategy:
+      matrix:
+        environment:
+         - runner: macos-latest
+           filesystem: APFS
+         - runner: ubuntu-latest
+           filesystem: btrfs
+    steps:
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: 'stable'
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v3
+
+    - name: Get dependencies
+      run: go get -v -t -d ./...
+
+    - name: Build
+      run: go build -v .
+
+    - # Sets TEST_PATH environment variable.
+      # TEST_PATH will later be updated to the mountpoint of the filesystem mount point.
+      name: Set up testing environment
+      run: |-
+        mkdir ./test/filesystems
+        echo "TEST_PATH=." >> $GITHUB_ENV
+
+    - name: Set up filesystem (MacOS)
+      if: ${{ matrix.environment.filesystem != '' && startsWith(matrix.environment.runner, 'macos-') }}
+      run: |-
+        IMAGE_PATH="./test/filesystems/${{matrix.environment.filesystem}}.dmg"
+        MOUNT_PATH="./test/filesystems/${{matrix.environment.filesystem}}.mount"
+        echo "TEST_PATH=${MOUNT_PATH}" >> $GITHUB_ENV
+
+        hdiutil create -size 500m -fs APFS "$IMAGE_PATH"
+        hdiutil attach -mountpoint "$MOUNT_PATH" "$IMAGE_PATH"
+
+    - name: Set up filesystem (Linux)
+      if: ${{ matrix.environment.filesystem != '' && startsWith(matrix.environment.runner, 'ubuntu-') }}
+      run: |-
+        IMAGE_PATH="./test/filesystems/${{matrix.environment.filesystem}}.img"
+        MOUNT_PATH="./test/filesystems/${{matrix.environment.filesystem}}.mount"
+        echo "TEST_PATH=${MOUNT_PATH}" >> $GITHUB_ENV
+
+        truncate -s 500m "$IMAGE_PATH"
+        mkfs -t "${{matrix.environment.filesystem}}" "$IMAGE_PATH"
+        mkdir "$MOUNT_PATH"
+        whoami
+        id -u
+        sudo mount -o loop "$IMAGE_PATH" "$MOUNT_PATH"
+        sudo chown -R "$(id -u):$(id -g)" "$MOUNT_PATH"
+
+    - name: Copy files to mounted filesystem
+      if: ${{ matrix.environment.filesystem != '' }}
+      run: |-
+        rsync -av --exclude=".*" --exclude "test/filesystems" . "$TEST_PATH"
+
+    - name: Test
+      working-directory: ${{ env.TEST_PATH }}
+      env:
+        TEST_FILESYSTEM: ${{ matrix.environment.filesystem }}
+      run: go test -v
