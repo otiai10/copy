@@ -370,7 +370,6 @@ func TestOptions_PreserveOwner(t *testing.T) {
 }
 
 func TestOptions_CopyRateLimit(t *testing.T) {
-
 	file, err := os.Create("test/data/case16/large.file")
 	if err != nil {
 		t.Errorf("failed to create test file: %v", err)
@@ -391,8 +390,13 @@ func TestOptions_CopyRateLimit(t *testing.T) {
 	start := time.Now()
 	err = Copy("test/data/case16", "test/data.copy/case16", opt)
 	elapsed := time.Since(start)
-	Expect(t, err).ToBe(nil)
-	Expect(t, elapsed > 5*time.Second).ToBe(true)
+	if currentFileCopyMethod.supportsOptWrapReader {
+		Expect(t, err).ToBe(nil)
+		Expect(t, elapsed > 5*time.Second).ToBe(true)
+	} else {
+		Expect(t, err).Not().ToBe(nil)
+		Expect(t, errors.Is(err, ErrUnsupportedCopyMethod)).ToBe(true)
+	}
 }
 
 func TestOptions_OnFileError(t *testing.T) {
