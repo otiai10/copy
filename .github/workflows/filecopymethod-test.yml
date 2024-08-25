@@ -22,6 +22,7 @@ jobs:
       matrix:
         environment:
          - filesystem: btrfs
+           filecopymethod: CopyBytes
     steps:
     - name: Set up Go
       uses: actions/setup-go@v4
@@ -56,6 +57,8 @@ jobs:
     - name: Test
       working-directory: test/filesystem/mounted
       run: go test -v
+      env:
+        TEST_FILECOPYMETHOD: ${{matrix.environment.filecopymethod}}
 
 
   test-macos:
@@ -65,6 +68,7 @@ jobs:
       matrix:
         environment:
          - filesystem: APFS
+           filecopymethod: CopyBytes
     steps:
     - name: Set up Go
       uses: actions/setup-go@v4
@@ -96,3 +100,5 @@ jobs:
     - name: Test
       working-directory: test/filesystem/mounted
       run: go test -v
+      env:
+        TEST_FILECOPYMETHOD: ${{matrix.environment.filecopymethod}}
