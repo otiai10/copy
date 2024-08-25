@@ -18,6 +18,7 @@ import (
 var assets embed.FS
 
 var supportsWrapReaderOption = true
+var supportsFSOption = true
 
 func setupFileCopyMethod(m *testing.M) {
 	// Allow running all the tests with a different FileCopyMethod.
@@ -26,6 +27,7 @@ func setupFileCopyMethod(m *testing.M) {
 	case "CopyBytes":
 		defaultCopyMethod = CopyBytes
 		supportsWrapReaderOption = true
+		supportsFSOption = true
 	}
 }
 
@@ -439,7 +441,12 @@ func TestOptions_FS(t *testing.T) {
 		FS:                assets,
 		PermissionControl: AddPermission(200), // FIXME
 	})
-	Expect(t, err).ToBe(nil)
+	if supportsWrapReaderOption {
+		Expect(t, err).ToBe(nil)
+	} else {
+		Expect(t, err).Not().ToBe(nil)
+		Expect(t, errors.Is(err, ErrUnsupportedCopyMethod)).ToBe(true)
+	}
 }
 
 type SleepyReader struct {
