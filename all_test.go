@@ -445,7 +445,12 @@ func TestOptions_FS(t *testing.T) {
 		FS:                assets,
 		PermissionControl: AddPermission(200), // FIXME
 	})
-	Expect(t, err).ToBe(nil)
+	if currentFileCopyMethod.supportsOptFS {
+		Expect(t, err).ToBe(nil)
+	} else {
+		Expect(t, err).Not().ToBe(nil)
+		Expect(t, errors.Is(err, ErrUnsupportedCopyMethod)).ToBe(true)
+	}
 }
 
 type SleepyReader struct {
