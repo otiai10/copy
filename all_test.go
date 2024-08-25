@@ -17,8 +17,27 @@ import (
 //go:embed test/data/case18/assets
 var assets embed.FS
 
+var currentFileCopyMethod FileCopyMethod
+
+func setupFileCopyMethod(m *testing.M) {
+	switch os.Getenv("TEST_FILECOPYMETHOD") {
+	case "":
+		currentFileCopyMethod = getDefaultOptions("", "").FileCopyMethod // Should be CopyBytes
+	case "CopyBytes":
+		currentFileCopyMethod = CopyBytes
+	}
+
+	// Allow running all the tests with a different FileCopyMethod.
+	// We want to re-use tests designed for CopyBytes with other copy methods
+	// to make sure that they behave the same way (where possible).
+	overrideDefaultOptions_FOR_TESTS = func(defopt *Options) {
+		defopt.FileCopyMethod = currentFileCopyMethod
+	}
+}
+
 func TestMain(m *testing.M) {
 	setup(m)
+	setupFileCopyMethod(m)
 	code := m.Run()
 	teardown(m)
 	os.Exit(code)
