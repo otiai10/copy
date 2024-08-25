@@ -23,8 +23,10 @@ jobs:
         environment:
          - runner: macos-latest
            filesystem: APFS
+           copymethod: GetBytes
          - runner: ubuntu-latest
            filesystem: btrfs
+           copymethod: GetBytes
     steps:
     - name: Set up Go
       uses: actions/setup-go@v4
@@ -82,4 +84,5 @@ jobs:
       working-directory: ${{ env.TEST_PATH }}
       env:
         TEST_FILESYSTEM: ${{ matrix.environment.filesystem }}
+        TEST_FILECOPYMETHOD: ${{ matrix.os.copymethod }}
       run: go test -v
