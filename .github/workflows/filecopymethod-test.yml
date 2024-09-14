@@ -26,7 +26,7 @@ jobs:
            copymethod: ReflinkCopy
          - runner: ubuntu-latest
            filesystem: btrfs
-           copymethod: GetBytes
+           copymethod: ReflinkCopy
     steps:
     - name: Set up Go
       uses: actions/setup-go@v4
