@@ -140,7 +140,7 @@ type FileCopyMethod struct {
 // getDefaultOptions provides default options,
 // which would be modified by usage-side.
 func getDefaultOptions(src, dest string) Options {
-	return Options{
+	defopt := Options{
 		OnSymlink: func(string) SymlinkAction {
 			return Shallow // Do shallow copy
 		},
@@ -157,7 +157,18 @@ func getDefaultOptions(src, dest string) Options {
 		WrapReader:        nil,                // Do not wrap src files, use them as they are.
 		intent:            intent{src, dest, nil, nil},
 	}
+
+	if overrideDefaultOptions_FOR_TESTS != nil {
+		overrideDefaultOptions_FOR_TESTS(&defopt)
+	}
+
+	return defopt
 }
+
+// overrideDefaultOptions_FOR_TESTS allows the copy package tests to replace
+// the default options. This allows existing test code to be reused with
+// different settings as a way to check that behavior is consistent.
+var overrideDefaultOptions_FOR_TESTS func(*Options)
 
 // assureOptions struct, should be called only once.
 // All optional values MUST NOT BE nil/zero after assured.
