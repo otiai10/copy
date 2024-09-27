@@ -17,8 +17,27 @@ import (
 //go:embed test/data/case18/assets
 var assets embed.FS
 
+var supportsWrapReaderOption = true
+var supportsFSOption = true
+
+func setupFileCopyMethod(m *testing.M) {
+	// Allow running all the tests with a different FileCopyMethod.
+	// We want to be able to have full coverage no matter the method.
+	switch os.Getenv("TEST_FILECOPYMETHOD") {
+	case "CopyBytes":
+		defaultCopyMethod = CopyBytes
+		supportsWrapReaderOption = true
+		supportsFSOption = true
+	case "ReflinkCopy":
+		defaultCopyMethod = ReflinkCopy
+		supportsWrapReaderOption = false
+		supportsFSOption = false
+	}
+}
+
 func TestMain(m *testing.M) {
 	setup(m)
+	setupFileCopyMethod(m)
 	code := m.Run()
 	teardown(m)
 	os.Exit(code)
@@ -351,7 +370,6 @@ func TestOptions_PreserveOwner(t *testing.T) {
 }
 
 func TestOptions_CopyRateLimit(t *testing.T) {
-
 	file, err := os.Create("test/data/case16/large.file")
 	if err != nil {
 		t.Errorf("failed to create test file: %v", err)
@@ -372,8 +390,13 @@ func TestOptions_CopyRateLimit(t *testing.T) {
 	start := time.Now()
 	err = Copy("test/data/case16", "test/data.copy/case16", opt)
 	elapsed := time.Since(start)
-	Expect(t, err).ToBe(nil)
-	Expect(t, elapsed > 5*time.Second).ToBe(true)
+	if supportsWrapReaderOption {
+		Expect(t, err).ToBe(nil)
+		Expect(t, elapsed > 5*time.Second).ToBe(true)
+	} else {
+		Expect(t, err).Not().ToBe(nil)
+		Expect(t, errors.Is(err, ErrUnsupportedCopyMethod)).ToBe(true)
+	}
 }
 
 func TestOptions_OnFileError(t *testing.T) {
@@ -422,7 +445,12 @@ func TestOptions_FS(t *testing.T) {
 		FS:                assets,
 		PermissionControl: AddPermission(200), // FIXME
 	})
-	Expect(t, err).ToBe(nil)
+	if supportsWrapReaderOption {
+		Expect(t, err).ToBe(nil)
+	} else {
+		Expect(t, err).Not().ToBe(nil)
+		Expect(t, errors.Is(err, ErrUnsupportedCopyMethod)).ToBe(true)
+	}
 }
 
 type SleepyReader struct {

@@ -1,4 +1,5 @@
 test/data.copy
+test/filesystems
 test/owned-by-root
 coverage.txt
 vendor
