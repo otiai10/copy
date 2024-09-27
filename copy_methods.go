@@ -15,6 +15,8 @@ var ErrUnsupportedCopyMethod = errors.New(
 // CopyBytes copies the file contents by reading the source file into a buffer,
 // then writing the buffer back to the destination file.
 var CopyBytes = FileCopyMethod{
+	supportsOptFS:         true,
+	supportsOptWrapReader: true,
 	fcopy: func(src, dest string, info os.FileInfo, opt Options) (err error, skipFile bool) {
 		var readcloser io.ReadCloser
 		if opt.FS != nil {

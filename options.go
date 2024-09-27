@@ -132,6 +132,9 @@ const (
 // FileCopyMethod represents one of the ways that a regular file can be copied.
 type FileCopyMethod struct {
 	fcopy func(src, dest string, info os.FileInfo, opt Options) (err error, skipFile bool)
+
+	supportsOptFS         bool
+	supportsOptWrapReader bool
 }
 
 // getDefaultOptions provides default options,
