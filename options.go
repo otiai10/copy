@@ -132,15 +132,12 @@ const (
 // FileCopyMethod represents one of the ways that a regular file can be copied.
 type FileCopyMethod struct {
 	fcopy func(src, dest string, info os.FileInfo, opt Options) (err error, skipFile bool)
-
-	supportsOptFS         bool
-	supportsOptWrapReader bool
 }
 
 // getDefaultOptions provides default options,
 // which would be modified by usage-side.
 func getDefaultOptions(src, dest string) Options {
-	defopt := Options{
+	return Options{
 		OnSymlink: func(string) SymlinkAction {
 			return Shallow // Do shallow copy
 		},
@@ -157,18 +154,7 @@ func getDefaultOptions(src, dest string) Options {
 		WrapReader:        nil,                // Do not wrap src files, use them as they are.
 		intent:            intent{src, dest, nil, nil},
 	}
-
-	if overrideDefaultOptions_FOR_TESTS != nil {
-		overrideDefaultOptions_FOR_TESTS(&defopt)
-	}
-
-	return defopt
 }
-
-// overrideDefaultOptions_FOR_TESTS allows the copy package tests to replace
-// the default options. This allows existing test code to be reused with
-// different settings as a way to check that behavior is consistent.
-var overrideDefaultOptions_FOR_TESTS func(*Options)
 
 // assureOptions struct, should be called only once.
 // All optional values MUST NOT BE nil/zero after assured.
