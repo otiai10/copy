@@ -27,16 +27,6 @@ type Options struct {
 	// RenameDestination can specify the destination file or dir name if needed to rename.
 	RenameDestination func(src, dest string) (string, error)
 
-	// FileCopyMethod specifies the method by which a regular file is copied.
-	// The default is CopyBytes.
-	//
-	// Available implementations:
-	//    - CopyBytes (best compatibility)
-	//
-	// Some implementations may not be supported on the target GOOS, or on
-	// the user's filesystem. When these fail, an error will be returned.
-	FileCopyMethod FileCopyMethod
-
 	// Specials includes special files to be copied. default false.
 	Specials bool
 
@@ -129,11 +119,6 @@ const (
 	Untouchable
 )
 
-// FileCopyMethod represents one of the ways that a regular file can be copied.
-type FileCopyMethod struct {
-	fcopy func(src, dest string, info os.FileInfo, opt Options) (err error, skipFile bool)
-}
-
 // getDefaultOptions provides default options,
 // which would be modified by usage-side.
 func getDefaultOptions(src, dest string) Options {
@@ -149,7 +134,6 @@ func getDefaultOptions(src, dest string) Options {
 		Sync:              false,              // Do not sync
 		Specials:          false,              // Do not copy special files
 		PreserveTimes:     false,              // Do not preserve the modification time
-		FileCopyMethod:    CopyBytes,          // Copy by bytes
 		CopyBufferSize:    0,                  // Do not specify, use default bufsize (32*1024)
 		WrapReader:        nil,                // Do not wrap src files, use them as they are.
 		intent:            intent{src, dest, nil, nil},
@@ -173,9 +157,6 @@ func assureOptions(src, dest string, opts ...Options) Options {
 		opts[0].PermissionControl = AddPermission(opts[0].AddPermission)
 	} else if opts[0].PermissionControl == nil {
 		opts[0].PermissionControl = PerservePermission
-	}
-	if opts[0].FileCopyMethod.fcopy == nil {
-		opts[0].FileCopyMethod = defopt.FileCopyMethod
 	}
 	opts[0].intent.src = defopt.intent.src
 	opts[0].intent.dest = defopt.intent.dest
