@@ -71,6 +71,11 @@ type Options struct {
 	// e.g., You can use embed.FS to copy files from embedded filesystem.
 	FS fs.FS
 
+	// FileCopyFunc is a function to copy an actual file.
+	// If nil, it uses the default file copying function with `io.Copy`.
+	// e.g., You can use `CopyOnWrite` to copy files with copy-on-write.
+	FileCopyFunc func(src, dest string) error
+
 	// NumOfWorkers represents the number of workers used for
 	// concurrent copying contents of directories.
 	// If 0 or 1, it does not use goroutine for copying directories.

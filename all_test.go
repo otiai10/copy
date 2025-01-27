@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/otiai10/copy/plugins/copyonwrite"
 	. "github.com/otiai10/mint"
 )
 
@@ -474,5 +475,17 @@ func TestOptions_RenameDestination(t *testing.T) {
 	_, err = os.Stat("test/data.copy/case20/foo/main.go")
 	Expect(t, err).ToBe(nil)
 	_, err = os.Stat("test/data.copy/case20/foo/control.txt")
+	Expect(t, err).ToBe(nil)
+}
+
+func TestOptions_FileCopyFunc_OnMacOS(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("This test is only for macOS")
+	}
+	// You can use your own file copy function
+	opt := Options{
+		FileCopyFunc: copyonwrite.CopyOnWrite,
+	}
+	err := Copy("test/data/case21", "test/data.copy/case21", opt)
 	Expect(t, err).ToBe(nil)
 }
