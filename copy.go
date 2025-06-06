@@ -52,6 +52,10 @@ func switchboard(src, dest string, info os.FileInfo, opt Options) (err error) {
 		}
 	}
 
+	if opt.FS != nil {
+		src = filepath.ToSlash(src)
+	}
+
 	switch {
 	case info.Mode()&os.ModeSymlink != 0:
 		err = onsymlink(src, dest, opt)
