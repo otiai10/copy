@@ -53,7 +53,7 @@ func switchboard(src, dest string, info os.FileInfo, opt Options) (err error) {
 	}
 
 	switch {
-	case info.Mode()&os.ModeSymlink != 0:
+	case info.Mode()&os.ModeSymlink != 0 || info.Mode()&os.ModeIrregular != 0:
 		err = onsymlink(src, dest, opt)
 	case info.IsDir():
 		err = dcopy(src, dest, info, opt)
