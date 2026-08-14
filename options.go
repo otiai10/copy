@@ -9,6 +9,8 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
+var defaultFS = os.DirFS("/")
+
 // Options specifies optional actions on copying.
 type Options struct {
 
@@ -86,6 +88,13 @@ type Options struct {
 
 	// Internal use only
 	intent intent
+}
+
+func (o Options) fs() fs.FS {
+	if o.FS != nil {
+		return o.FS
+	}
+	return defaultFS
 }
 
 type intent struct {

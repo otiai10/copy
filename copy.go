@@ -25,14 +25,7 @@ func Copy(src, dest string, opts ...Options) error {
 		opt.intent.sem = semaphore.NewWeighted(opt.NumOfWorkers)
 		opt.intent.ctx = context.Background()
 	}
-	if opt.FS != nil {
-		info, err := fs.Stat(opt.FS, src)
-		if err != nil {
-			return onError(src, dest, err, opt)
-		}
-		return switchboard(src, dest, info, opt)
-	}
-	info, err := os.Lstat(src)
+	info, err := fs.Lstat(opt.fs(), src)
 	if err != nil {
 		return onError(src, dest, err, opt)
 	}
@@ -88,11 +81,7 @@ func copyNextOrSkip(src, dest string, info os.FileInfo, opt Options) error {
 func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 
 	var readcloser io.ReadCloser
-	if opt.FS != nil {
-		readcloser, err = opt.FS.Open(src)
-	} else {
-		readcloser, err = os.Open(src)
-	}
+	readcloser, err = opt.fs().Open(src)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil
@@ -172,20 +161,12 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 	}
 	defer chmodfunc(&err)
 
-	var entries []fs.DirEntry
-	if opt.FS != nil {
-		entries, err = fs.ReadDir(opt.FS, srcdir)
-		if err != nil {
-			return err
+	entries, err := fs.ReadDir(opt.fs(), srcdir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
 		}
-	} else {
-		entries, err = os.ReadDir(srcdir)
-		if err != nil {
-			if os.IsNotExist(err) {
-				return nil
-			}
-			return err
-		}
+		return err
 	}
 
 	contents := make([]fs.FileInfo, 0, len(entries))
@@ -280,15 +261,15 @@ func onDirExists(opt Options, srcdir, destdir string) (bool, error) {
 func onsymlink(src, dest string, opt Options) error {
 	switch opt.OnSymlink(src) {
 	case Shallow:
-		if err := lcopy(src, dest); err != nil {
+		if err := lcopy(src, dest, opt); err != nil {
 			return err
 		}
 		if opt.PreserveTimes {
-			return preserveLtimes(src, dest)
+			return preserveLtimes(src, dest, opt)
 		}
 		return nil
 	case Deep:
-		orig, err := os.Readlink(src)
+		orig, err := fs.ReadLink(opt.fs(), src)
 		if err != nil {
 			return err
 		}
@@ -296,7 +277,7 @@ func onsymlink(src, dest string, opt Options) error {
 			// orig is a relative link: need to add src dir to orig
 			orig = filepath.Join(filepath.Dir(src), orig)
 		}
-		info, err := os.Lstat(orig)
+		info, err := fs.Lstat(opt.fs(), orig)
 		if err != nil {
 			return err
 		}
@@ -310,8 +291,8 @@ func onsymlink(src, dest string, opt Options) error {
 
 // lcopy is for a symlink,
 // with just creating a new symlink by replicating src symlink.
-func lcopy(src, dest string) error {
-	orig, err := os.Readlink(src)
+func lcopy(src, dest string, opt Options) error {
+	orig, err := fs.ReadLink(opt.fs(), src)
 	// @See https://github.com/otiai10/copy/issues/111
 	// TODO: This might be controlled by Options in the future.
 	if err != nil {
@@ -328,8 +309,7 @@ func lcopy(src, dest string) error {
 			return err
 		}
 	}
-
-	return os.Symlink(orig, dest)
+	return os.Symlink(dest, dest)
 }
 
 // fclose ANYHOW closes file,
