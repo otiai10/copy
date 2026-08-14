@@ -2,6 +2,6 @@
 
 package copy
 
-func preserveLtimes(src, dest string) error {
+func preserveLtimes(src, dest string, opt Options) error {
 	return nil // Unsupported
 }

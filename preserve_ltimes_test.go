@@ -28,7 +28,7 @@ func TestOptions_PreserveLTimes(t *testing.T) {
 }
 
 func TestOptions_PreserveLTimesErrorReturn(t *testing.T) {
-	err := preserveLtimes("doesnotexist_original.txt", "doesnotexist_copy.txt")
+	err := preserveLtimes("doesnotexist_original.txt", "doesnotexist_copy.txt", Options{})
 	Expect(t, err).ToBe(unix.ENOENT)
 	Expect(t, os.IsNotExist(err)).ToBe(true)
 }
