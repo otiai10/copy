@@ -1,16 +1,10 @@
-FROM alpine:3.16
+FROM golang:1.27-alpine
 
 WORKDIR /app
 
-RUN apk update
-RUN apk add \
-  g++ \
-  git \
-  go
-
 RUN adduser -g "" -D someuser
 
-# root-owned directory setup for test case 14
+# Root-owned directory for test case 14
 RUN mkdir -p test/owned-by-root \
   && chown :someuser test/owned-by-root \
   && chmod 775 test/owned-by-root
