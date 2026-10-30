@@ -321,6 +321,10 @@ func lcopy(src, dest string) error {
 		return err
 	}
 
+	if err := os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
+		return err
+	}
+
 	// @See https://github.com/otiai10/copy/issues/132
 	// TODO: Control by SymlinkExistsAction
 	if _, err := os.Lstat(dest); err == nil {
