@@ -10,3 +10,11 @@ updates:
       - otiai10
     assignees:
       - otiai10
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /test/images
+    schedule:
+      interval: weekly
