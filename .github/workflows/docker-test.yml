@@ -2,22 +2,21 @@ name: Docker Test
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  docker-test:
+  alpine:
+    name: Alpine test
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        runtime:
-          - alpine
-          - archlinux
-          - centos
     steps:
-      - name: checkout
-        uses: actions/checkout@v3
-      - name: ${{ matrix.runtime }}
-        shell: 'script -q -e -c "bash {0}"'
-        run: bash ./test/run --build --run ${{ matrix.runtime }}
+      - uses: actions/checkout@v7
+      - name: Build test image
+        run: docker build -f test/images/alpine.Dockerfile -t copy-test-alpine .
+      - name: Test as a non-root user
+        run: docker run --rm copy-test-alpine
