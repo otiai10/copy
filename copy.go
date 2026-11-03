@@ -2,6 +2,7 @@ package copy
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -100,6 +101,17 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 		return
 	}
 	defer fclose(readcloser, &err)
+
+	// os.Create below truncates dest. If dest is the same file as src
+	// (same path, hard link, or symlink to it), that would empty src
+	// before it is read, so refuse before touching anything.
+	if sf, ok := readcloser.(*os.File); ok && opt.FS == nil {
+		if sinfo, serr := sf.Stat(); serr == nil {
+			if dinfo, derr := os.Stat(dest); derr == nil && os.SameFile(sinfo, dinfo) {
+				return fmt.Errorf("copy: source and destination are the same file: %q and %q", src, dest)
+			}
+		}
+	}
 
 	if err = os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
 		return
