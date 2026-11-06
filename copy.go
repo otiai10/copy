@@ -102,15 +102,9 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 	}
 	defer fclose(readcloser, &err)
 
-	// os.Create below truncates dest. If dest is the same file as src
-	// (same path, hard link, or symlink to it), that would empty src
-	// before it is read, so refuse before touching anything.
-	if sf, ok := readcloser.(*os.File); ok && opt.FS == nil {
-		if sinfo, serr := sf.Stat(); serr == nil {
-			if dinfo, derr := os.Stat(dest); derr == nil && os.SameFile(sinfo, dinfo) {
-				return fmt.Errorf("copy: source and destination are the same file: %q and %q", src, dest)
-			}
-		}
+	// os.Create below truncates dest, so refuse before touching anything.
+	if opt.FS == nil && isSameFile(readcloser, dest) {
+		return fmt.Errorf("copy: source and destination are the same file: %q and %q", src, dest)
 	}
 
 	if err = os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
@@ -165,6 +159,24 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 	}
 
 	return
+}
+
+// isSameFile reports whether dest is the file already opened as src
+// (same path, hard link, or symlink to it).
+func isSameFile(src io.Reader, dest string) bool {
+	f, ok := src.(*os.File)
+	if !ok {
+		return false
+	}
+	sinfo, err := f.Stat()
+	if err != nil {
+		return false
+	}
+	dinfo, err := os.Stat(dest)
+	if err != nil {
+		return false
+	}
+	return os.SameFile(sinfo, dinfo)
 }
 
 // dcopy is for a directory,
