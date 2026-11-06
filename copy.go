@@ -103,7 +103,7 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 	defer fclose(readcloser, &err)
 
 	// os.Create below truncates dest, so refuse before touching anything.
-	if opt.FS == nil && isSameFile(readcloser, dest) {
+	if opt.FS == nil && isSameFile(src, dest) {
 		return fmt.Errorf("copy: source and destination are the same file: %q and %q", src, dest)
 	}
 
@@ -161,14 +161,10 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 	return
 }
 
-// isSameFile reports whether dest is the file already opened as src
+// isSameFile reports whether src and dest point to the same file
 // (same path, hard link, or symlink to it).
-func isSameFile(src io.Reader, dest string) bool {
-	f, ok := src.(*os.File)
-	if !ok {
-		return false
-	}
-	sinfo, err := f.Stat()
+func isSameFile(src, dest string) bool {
+	sinfo, err := os.Stat(src)
 	if err != nil {
 		return false
 	}
