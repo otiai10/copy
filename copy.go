@@ -103,7 +103,7 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 	defer fclose(readcloser, &err)
 
 	// os.Create below truncates dest, so refuse before touching anything.
-	if opt.FS == nil && isSameFile(src, dest) {
+	if dinfo, err := os.Stat(dest); err == nil && os.SameFile(info, dinfo) {
 		return fmt.Errorf("copy: source and destination are the same file: %q and %q", src, dest)
 	}
 
@@ -159,20 +159,6 @@ func fcopy(src, dest string, info os.FileInfo, opt Options) (err error) {
 	}
 
 	return
-}
-
-// isSameFile reports whether src and dest point to the same file
-// (same path, hard link, or symlink to it).
-func isSameFile(src, dest string) bool {
-	sinfo, err := os.Stat(src)
-	if err != nil {
-		return false
-	}
-	dinfo, err := os.Stat(dest)
-	if err != nil {
-		return false
-	}
-	return os.SameFile(sinfo, dinfo)
 }
 
 // dcopy is for a directory,
